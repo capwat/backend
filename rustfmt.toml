@@ -1,0 +1,6 @@
+tab_spaces = 4
+edition = "2021"
+max_width = 100
+imports_layout = "HorizontalVertical"
+imports_granularity = "Crate"
+group_imports = "One"
