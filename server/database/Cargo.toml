@@ -1,0 +1,23 @@
+# NOTE: It should not depend on whim-types because it will cause
+#       conflicts and Rust don't allow us to implement custom functions
+#       from a struct in a different crate anyway.
+#
+#       If you want to see the schema of the database, please go
+#       to the `server/types` crate.
+[package]
+name = "whim-database"
+description = "Base crate for databases"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+error-stack.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+whim-core.workspace = true
