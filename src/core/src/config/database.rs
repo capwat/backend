@@ -6,6 +6,7 @@ use std::{
 };
 use validator::Validate;
 
+/// Global database configuration.
 #[derive(Debug, Deserialize, Validate)]
 pub struct Database {
   /// Writable primary database.

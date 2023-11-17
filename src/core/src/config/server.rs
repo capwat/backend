@@ -7,6 +7,7 @@ use validator::Validate;
 use super::LoadError;
 use crate::util::shims::{FigmentErrorAttachable, IntoValidatorReport};
 
+/// Server configuration for running a web server.
 #[derive(Debug, Deserialize, Validate)]
 pub struct Server {
   #[serde(default)]

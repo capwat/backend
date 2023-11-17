@@ -8,6 +8,15 @@ use crate::{
   Error, PoolConnection, Result, Transaction,
 };
 
+/// A Postgres database connection pool.
+///
+/// To establish a Postgres database pool, one must have a
+/// [global database config](config::Database) and the [pool config](config::DbPoolConfig)
+/// used to connect to the database.
+///
+/// [Global database config](config::Database) will be applied in common
+/// configurations such as `timeout_secs`. Meanwhile, [pool config](config::DbPoolConfig)
+/// will be applied specifically for database connection pool.
 #[derive(Clone)]
 pub struct Pool {
   pool: sqlx::PgPool,
@@ -57,16 +66,27 @@ impl std::fmt::Debug for Pool {
 }
 
 impl Pool {
+  /// Gets the active connections of a database pool
   #[inline(always)]
   pub fn connections(&self) -> u32 {
     self.pool.size()
   }
 
+  /// Checks if the database pool is healthy.
+  ///
+  /// This function uses `.connections()` method (a method
+  /// used to get active connections in [Pool object](Pool)) and
+  /// check if it is greater than `0``.
   #[inline(always)]
   pub fn is_healthy(&self) -> bool {
     self.connections() > 0
   }
 
+  /// It attempts to start a database transaction and returns
+  /// a connection with transaction is active until it is dropped.
+  ///
+  /// For more instructions on how to use the [`Transaction`](crate::Transaction) object,
+  /// please refer to [sqlx's Transaction object documentation](sqlx::Transaction)
   #[doc(hidden)]
   #[tracing::instrument(name = "db.transaction", skip(self))]
   pub async fn begin(&self) -> Result<Transaction> {
@@ -80,6 +100,7 @@ impl Pool {
     }
   }
 
+  /// It attempts to get an active database connection.
   #[tracing::instrument(name = "db.connect", skip(self))]
   pub async fn get(&self) -> Result<PoolConnection> {
     if let Some(inner) = self.pool.try_acquire() {
@@ -92,6 +113,13 @@ impl Pool {
     }
   }
 
+  /// This function will try to wait for a database connection
+  /// to be successfully established until there's a timeout
+  /// (can be configured through [`config.timeout_secs`](config::Database)).
+  ///
+  /// If it fails to connect for a certain period of time, it
+  /// will throw an error stating that there's something wrong
+  /// when establishing a connection to the database.
   #[tracing::instrument(skip(self))]
   pub async fn wait_until_healthy(&self) -> Result<()> {
     match self.pool.acquire().await {

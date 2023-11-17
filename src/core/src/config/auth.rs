@@ -24,6 +24,7 @@ impl std::fmt::Debug for Auth {
 }
 
 impl Auth {
+  /// Gets the raw value of JWT secret key
   pub fn jwt_key(&self) -> MaybeGenerated<Sensitive<&str>> {
     let value = Sensitive::new(self.jwt_key.value().as_str());
     match &self.jwt_key {
@@ -32,7 +33,7 @@ impl Auth {
     }
   }
 
-  /// Creates a SHA224 sum from a JWT secret.
+  /// Generates or get the SHA224 hash of a JWT secret key
   pub fn jwt_key_hash(&self) -> &str {
     if let Some(cache) = self.jwt_key_hash.get() {
       return cache;
@@ -51,6 +52,9 @@ impl Auth {
   pub const MIN_JWT_KEY_LENGTH: usize = 24;
   pub const MAX_JWT_KEY_LENGTH: usize = 1024;
 
+  /// Generates a new JWT secret key with alphabetic and special
+  /// characters are randomized and scrambled into 24 characters.
+  /// (minimum amount of characters required for a JWT secret key for Whim)
   pub fn generate_jwt_key() -> MaybeGenerated<Sensitive<String>> {
     const CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*";
 
@@ -60,6 +64,10 @@ impl Auth {
 }
 
 impl Default for Auth {
+  /// Creates a default [`Auth`] struct.
+  ///
+  /// When this function is called, it will generate a new
+  /// randomized JWT secret key from [`Self::generate_jwt_key`].
   fn default() -> Self {
     let auth = Self {
       jwt_key: Self::generate_jwt_key(),
@@ -71,6 +79,8 @@ impl Default for Auth {
 }
 
 impl Validate for Auth {
+  /// When this [struct](Auth) performs a validation, it checks
+  /// for if the `jwt_key` is within 24 up to 1024 characters.
   fn validate(&self) -> Result<(), ValidateError> {
     let mut fields = ValidateError::field_builder();
     {
