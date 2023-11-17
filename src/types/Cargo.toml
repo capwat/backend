@@ -1,0 +1,29 @@
+[package]
+name = "whim-types"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+# This feature is for server usage because I wanted
+# to make a client API crate for that soon.
+server = ["sqlx", "whim-database"]
+
+[dependencies]
+chrono.workspace = true
+either.workspace = true
+once_cell.workspace = true
+regex.workspace = true
+serde.workspace = true
+serde-value.workspace = true
+sensitive.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+validator.workspace = true
+
+sqlx = { workspace = true, optional = true }
+whim-database = { workspace = true, optional = true }
+whim-derives.workspace = true

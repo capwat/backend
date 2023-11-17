@@ -1,4 +1,4 @@
-tab_spaces = 4
+tab_spaces = 2
 edition = "2021"
 max_width = 100
 imports_layout = "HorizontalVertical"

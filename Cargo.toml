@@ -1,5 +1,12 @@
 [workspace]
-members = []
+members = [
+    "src/core",
+    "src/database",
+    "src/http-server",
+    "src/library/*",
+    "src/macros/*",
+    "src/types",
+]
 resolver = "2"
 
 [workspace.package]
@@ -40,7 +47,8 @@ tracing-error = "*"
 # de/serialization
 figment = { version = "0.10.12", features = ["env", "toml", "test"] }
 serde = { version = "1.0.190", features = ["derive"] }
-serde_json = "*"
+serde_json = "1.0.108"
+serde-value = "0.7.0"
 toml_edit = { version = "0.20.7", features = ["serde"] }
 
 # data types
@@ -50,13 +58,20 @@ mime = "0.3.17"
 url = "2.4.1"
 
 # whim core libraries
-sensitive = { path = "server/library/sensitive" }
-validator = { path = "server/library/validator" }
+sensitive = { path = "src/library/sensitive" }
+validator = { path = "src/library/validator" }
 
-# whim subcrates
-whim-core = { path = "server/core" }
-whim-database = { path = "server/database" }
-whim-types = { path = "server/types", features = ["server"] }
+# whim sub-crates
+whim-core = { path = "src/core" }
+whim-database = { path = "src/database" }
+whim-types = { path = "src/types" }
 
 # database
 sqlx = { version = "0.7.2", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono"] }
+
+# macros
+proc-macro2 = "1.0.69"
+quote = "1.0.33"
+syn = "2.0.38"
+
+whim-derives = { path = "src/macros/derives" }

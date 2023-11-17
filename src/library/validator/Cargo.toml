@@ -1,0 +1,17 @@
+[package]
+name = "validator"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[features]
+default = ["derive"]
+derive = ["validator-derive"]
+
+[dependencies]
+serde.workspace = true
+url.workspace = true
+validator-derive = { path = "../../macros/validator-derive", optional = true }
