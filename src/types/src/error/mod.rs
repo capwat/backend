@@ -14,7 +14,7 @@ pub mod server;
 pub enum RequestType<T> {
   InvalidRequest(client::InvalidRequest),
   Local(T),
-  Server(server::Error),
+  Server(server::ServerError),
 }
 
 impl<T: Primary> RequestType<T> {
@@ -26,7 +26,7 @@ impl<T: Primary> RequestType<T> {
     Self::Local(value)
   }
 
-  pub const fn server(value: server::Error) -> Self {
+  pub const fn server(value: server::ServerError) -> Self {
     Self::Server(value)
   }
 }
@@ -49,7 +49,8 @@ impl<'de, T: Primary + PrimaryCreator> serde::Deserialize<'de> for Request<T> {
           .map_err(|e| e.into_de_error::<D>())?,
       ),
       &codes::SERVER => RequestType::Server(
-        server::Error::from_subcode(raw.subcode, raw.data).map_err(|e| e.into_de_error::<D>())?,
+        server::ServerError::from_subcode(raw.subcode, raw.data)
+          .map_err(|e| e.into_de_error::<D>())?,
       ),
       _ if raw.code == *T::code() => RequestType::Local(
         T::from_subcode(raw.subcode, raw.data).map_err(|e| e.into_de_error::<D>())?,

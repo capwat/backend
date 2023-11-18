@@ -157,3 +157,21 @@ impl DbPoolConfig {
     accepted
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::hint::black_box;
+
+  #[test]
+  fn test_consts_not_crashing() {
+    black_box(DbPoolConfig::default_pool_size().get());
+    black_box(DbPoolConfig::default_pool_timeout_secs().get());
+  }
+
+  #[test]
+  fn test_validate_pg_url() {
+    assert!(DbPoolConfig::validate_pg_url("postgres://hello.world"));
+    assert!(!DbPoolConfig::validate_pg_url("hello.world"));
+  }
+}

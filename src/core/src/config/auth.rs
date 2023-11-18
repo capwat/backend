@@ -91,8 +91,36 @@ impl Validate for Auth {
       if self.jwt_key.len() > Self::MAX_JWT_KEY_LENGTH {
         jwt_errs.insert("JWT secret key is too big");
       }
+
+      let has_valid_chars = self
+        .jwt_key
+        .chars()
+        .any(|v| v.is_alphabetic() || matches!(v, '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*'));
+
+      if !has_valid_chars {
+        jwt_errs
+          .insert("JWT secret key must contain alphabetic and ASCII-compatible symbol characters");
+      }
       fields.insert("jwt_key", jwt_errs.build());
     }
     fields.build().into_result()
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::Auth;
+  use validator::Validate;
+
+  #[test]
+  fn test_generated_jwt_key() {
+    let key = Auth::generate_jwt_key();
+    assert!(
+      key.len() == Auth::MIN_JWT_KEY_LENGTH,
+      "Generated key is not equal to the minimum JWT key length"
+    );
+
+    let auth = Auth::default();
+    assert_eq!(auth.validate(), Ok(()));
   }
 }

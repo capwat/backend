@@ -2,13 +2,14 @@ pub const SERVER: u32 = 1;
 pub mod server {
   pub const INTERNAL: u32 = 1;
   pub const READONLY_MODE: u32 = 2;
-  pub const OUTAGE: u32 = 3;
+  // pub const OUTAGE: u32 = 3;
 }
 
 pub const INVALID_REQUEST: u32 = 2;
 pub mod invalid_request {
   pub const UNSUPPORTED_API_VERSION: u32 = 1;
   pub const INVALID_FORM_BODY: u32 = 2;
+  pub const CONTENT_TYPE: u32 = 3;
 }
 
 pub const LOGIN_USER: u32 = 3;

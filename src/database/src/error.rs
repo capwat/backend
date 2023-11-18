@@ -45,11 +45,11 @@ pub type Result<T> = error_stack::Result<T, Error>;
 /// This trait deals with `error_stack::Report<Error>` because it is
 /// annoying to implement code if [`Error`] is variant of something:
 ///
-/// ```no_run,rs
+/// ```rust,ignore
 /// let result = db.do_query(...);
 /// if let Err(e) = result {
 ///   let is_unhealthy = e.downcast_ref::<whim_db_core::Error>()
-///     .map(|v| matches!(v, whim_db_core::UnhealthyPool))
+///     .map(|v| matches!(v, whim_database::Error::UnhealthyPool))
 ///     .unwrap_or_default();
 ///   ...
 /// }

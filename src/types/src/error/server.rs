@@ -5,7 +5,7 @@ use whim_derives::Error;
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 #[error(code = "codes::SERVER")]
-pub enum Error {
+pub enum ServerError {
   #[error(
     message = "Internal error occurred. Please try again later.",
     subcode = "codes::server::INTERNAL"
@@ -46,19 +46,13 @@ pub enum Error {
     subcode = "codes::server::READONLY_MODE"
   )]
   ReadonlyMode,
-  #[error(
-    message = "This server is experiencing an outage. Please try again later.",
-    subcode = "codes::server::OUTAGE"
-  )]
-  Outage,
 }
 
-impl Display for Error {
+impl Display for ServerError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Error::Internal => f.write_str("Internal error occurred"),
-      Error::ReadonlyMode => f.write_str("Tried to write while in read-only mode"),
-      Error::Outage => f.write_str("Server experienced outage"),
+      ServerError::Internal => f.write_str("Internal error occurred"),
+      ServerError::ReadonlyMode => f.write_str("Tried to write while in read-only mode"),
     }
   }
 }
