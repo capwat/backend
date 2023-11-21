@@ -1,28 +1,22 @@
-[workspace]
-members = [
-    "src/core",
-    "src/database",
-    "src/http-server",
-    "src/library/*",
-    "src/types",
-]
-resolver = "2"
+[package]
+name = "whim"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
-[workspace.package]
-version = "0.0.1-alpha.0"
-authors = ["memothelemo <me@memothelemo.xyz>"]
-edition = "2021"
-license = "AGPL-2.0"
-repository = "https://github.com/memothelemo/whim"
-rust-version = "1.73.0"
+[dependencies]
+# local crates
+validator.workspace = true
 
-[workspace.dependencies]
 # crypto
 jsonwebtoken = "9.1.0"
 sha2 = "0.10.8"
 
 # useful utilities
-error-stack = { version = "0.4.1", features = ["spantrace"] }
+error-stack = { version = "0.4.1" }
 futures = "0.3.29"
 heck = "0.4.1"
 hex = "0.4.3"
@@ -42,7 +36,8 @@ regex = "1.10.2"
 
 # telemetry and logging
 tracing = "0.1.40"
-tracing-error = "*"
+tracing-actix-web = "0.7.9"
+tracing-error = "0.2.0"
 
 # de/serialization
 figment = { version = "0.10.12", features = ["env", "toml", "test"] }
@@ -55,34 +50,61 @@ toml_edit = { version = "0.21.0", features = ["serde"] }
 serde_test = "1.0.176"
 static_assertions = "1.1.0"
 
+# database
+sqlx = { version = "0.7.2", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono"] }
+
 # data types
 chrono = { version = "0.4.31", features = ["serde"] }
 either = "1.9.0"
 mime = "0.3.17"
 url = "2.4.1"
+tracing-subscriber = "0.3.18"
 
-# whim core libraries
-sensitive = { path = "src/library/sensitive" }
-validator = { path = "src/library/validator" }
+[lints]
+workspace = true
 
-# whim sub-crates
-whim-core = { path = "src/core" }
-whim-database = { path = "src/database" }
-whim-types = { path = "src/types" }
+##################
+# whim workspace #
+##################
+[workspace]
+members = ["crates/*"]
+resolver = "2"
 
-# database
-sqlx = { version = "0.7.2", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono"] }
+##########################
+# workspace dependencies #
+##########################
+[workspace.dependencies]
+validator = { path = "crates/validator" }
 
-# macros
+once_cell = "1.18.0"
+serde = { version = "1.0.190", features = ["derive"] }
+url = "2.4.1"
+
 proc-macro2 = "1.0.69"
 quote = "1.0.33"
 syn = "2.0.38"
 
+#########################
+# package configuration #
+#########################
+[workspace.package]
+version = "0.0.1-alpha.0"
+authors = ["memothelemo <me@memothelemo.xyz>"]
+edition = "2021"
+license = "AGPL-2.0"
+repository = "https://github.com/memothelemo/whim"
+rust-version = "1.73.0"
+
+######################
+# lint configuration #
+######################
 [workspace.lints.clippy]
+default_trait_access = "allow"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
-missing_panic_docs = "allow"
-missing_safety_docs = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+missing_safety_doc = "allow"
 
 expect_used = "deny"
 let_underscore_must_use = "deny"
@@ -93,4 +115,3 @@ unwrap_used = "deny"
 [workspace.lints.rust]
 nonstandard_style = "deny"
 rust_2018_idioms = "deny"
-
