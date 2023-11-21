@@ -19,6 +19,12 @@ mime.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 tracing.workspace = true
 tracing-error.workspace = true
 validator.workspace = true
+
+tracing-subscriber = "*"
+
+[lints]
+workspace = true

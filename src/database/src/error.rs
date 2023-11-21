@@ -9,7 +9,7 @@ pub enum Error {
   #[error("invalid connection url")]
   InvalidUrl,
   /// An error caused by an [`sqlx`] error.
-  #[error("received a pool error")]
+  #[error("received a pool error: {0}")]
   Internal(sqlx::Error),
   /// The database pool (primary) is currently in read mode
   /// (most likely due to maintenance) and should not perform

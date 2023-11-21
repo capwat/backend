@@ -29,7 +29,7 @@ pub fn derive_validate(input: &DeriveInput) -> ExpandResult {
   })
 }
 
-fn generate_body(input: &Input) -> TokenStream {
+fn generate_body(input: &Input<'_>) -> TokenStream {
   match &input.data {
     Data::Enum(variants) => {
       let patterns = variants
@@ -50,7 +50,7 @@ fn generate_body(input: &Input) -> TokenStream {
   }
 }
 
-fn generate_variant_checker(variant: &Variant) -> TokenStream {
+fn generate_variant_checker(variant: &Variant<'_>) -> TokenStream {
   let variant_ident = &variant.ident;
   let preindex = TokenStream::new();
   let body = generate_fields_checker(&variant.fields, &preindex, &variant.style);
@@ -77,7 +77,7 @@ fn generate_variant_checker(variant: &Variant) -> TokenStream {
   }
 }
 
-fn needs_add_checkers(fields: &[Field]) -> bool {
+fn needs_add_checkers(fields: &[Field<'_>]) -> bool {
   for field in fields.iter() {
     if field.attrs.requires_extend() {
       return true;
@@ -86,7 +86,11 @@ fn needs_add_checkers(fields: &[Field]) -> bool {
   false
 }
 
-fn generate_fields_checker(fields: &[Field], preindex: &TokenStream, style: &Style) -> TokenStream {
+fn generate_fields_checker(
+  fields: &[Field<'_>],
+  preindex: &TokenStream,
+  style: &Style,
+) -> TokenStream {
   // Other optimizations
   if fields.is_empty() || !needs_add_checkers(fields) {
     return quote!(Ok(()));
@@ -141,7 +145,7 @@ fn fix_member_name(member: &syn::Member) -> syn::Ident {
 }
 
 fn generate_struct_field_checker(
-  field: &Field,
+  field: &Field<'_>,
   preindex: &TokenStream,
   style: &Style,
 ) -> TokenStream {

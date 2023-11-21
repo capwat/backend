@@ -80,7 +80,7 @@ pub struct Ranges {
 }
 
 impl Ranges {
-  fn from_parsed_meta(ctx: &Context, meta: &ParseNestedMeta) -> syn::Result<Self> {
+  fn from_parsed_meta(ctx: &Context, meta: &ParseNestedMeta<'_>) -> syn::Result<Self> {
     // #[validate(length([min = ...] [max = ...] [equal = ...]))]
     let mut field = Self::default();
     meta.parse_nested_meta(|meta| {
@@ -115,7 +115,7 @@ pub struct Length {
 }
 
 impl Length {
-  fn from_parsed_meta(ctx: &Context, meta: &ParseNestedMeta) -> syn::Result<Self> {
+  fn from_parsed_meta(ctx: &Context, meta: &ParseNestedMeta<'_>) -> syn::Result<Self> {
     // #[validate(length([min = ...] [max = ...] [equal = ...]))]
     let mut field = Self::default();
     meta.parse_nested_meta(|meta| {

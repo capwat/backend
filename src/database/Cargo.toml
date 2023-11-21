@@ -21,3 +21,6 @@ thiserror.workspace = true
 tracing.workspace = true
 
 whim-core.workspace = true
+
+[lints]
+workspace = true

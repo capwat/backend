@@ -15,7 +15,7 @@ pub fn get_lit_int<T: FromStr>(
   ctx: &Context,
   attr_name: &'static str,
   meta_item_name: &'static str,
-  meta: &ParseNestedMeta,
+  meta: &ParseNestedMeta<'_>,
 ) -> syn::Result<Option<T>>
 where
   <T as FromStr>::Err: std::fmt::Display,
@@ -39,7 +39,7 @@ where
 pub fn parse_lit_into_path(
   ctx: &Context,
   attr_name: &'static str,
-  meta: &ParseNestedMeta,
+  meta: &ParseNestedMeta<'_>,
 ) -> syn::Result<Option<syn::ExprPath>> {
   let string = match get_lit_str(ctx, attr_name, meta)? {
     Some(string) => string,
@@ -61,7 +61,7 @@ pub fn parse_lit_into_path(
 pub fn get_lit_str(
   ctx: &Context,
   attr_name: &'static str,
-  meta: &ParseNestedMeta,
+  meta: &ParseNestedMeta<'_>,
 ) -> syn::Result<Option<syn::LitStr>> {
   get_lit_str2(ctx, attr_name, attr_name, meta)
 }
@@ -70,7 +70,7 @@ pub fn get_lit_str2(
   ctx: &Context,
   attr_name: &'static str,
   meta_item_name: &'static str,
-  meta: &ParseNestedMeta,
+  meta: &ParseNestedMeta<'_>,
 ) -> syn::Result<Option<syn::LitStr>> {
   let expr: syn::Expr = meta.value()?.parse()?;
   let mut value = &expr;

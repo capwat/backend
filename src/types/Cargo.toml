@@ -15,6 +15,7 @@ server = ["sqlx", "whim-database"]
 [dependencies]
 chrono.workspace = true
 either.workspace = true
+heck.workspace = true
 once_cell.workspace = true
 regex.workspace = true
 serde.workspace = true
@@ -26,4 +27,10 @@ validator.workspace = true
 
 sqlx = { workspace = true, optional = true }
 whim-database = { workspace = true, optional = true }
-whim-derives.workspace = true
+
+[dev-dependencies]
+serde_test.workspace = true
+static_assertions.workspace = true
+
+[lints]
+workspace = true

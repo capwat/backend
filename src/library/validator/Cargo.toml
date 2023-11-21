@@ -14,4 +14,7 @@ derive = ["validator-derive"]
 [dependencies]
 serde.workspace = true
 url.workspace = true
-validator-derive = { path = "../../macros/validator-derive", optional = true }
+validator-derive = { path = "../validator-derive", optional = true }
+
+[lints]
+workspace = true

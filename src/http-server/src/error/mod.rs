@@ -1,35 +1,33 @@
 use error_stack::{Context, Report};
-use std::any::{Any, TypeId};
 use tracing_error::SpanTrace;
 
-mod impls;
-mod traits;
-
 pub mod ext;
-pub use traits::*;
+pub use ext::*;
+
+mod impls;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Error {
-  error_type: Box<dyn ErrorType>,
+  error_type: whim_types::Error,
   report: Report<Box<dyn Context>>,
   trace: SpanTrace,
 }
 
 impl Error {
   #[must_use]
-  pub fn from_context(error_type: impl ErrorType, context: impl Context) -> Self {
+  pub fn from_context(error_type: whim_types::Error, context: impl Context) -> Self {
     Self {
-      error_type: Box::new(error_type),
+      error_type,
       report: to_any_report(context),
       trace: SpanTrace::capture(),
     }
   }
 
   #[must_use]
-  pub fn from_report(error_type: impl ErrorType, report: Report<impl Context>) -> Self {
+  pub fn from_report(error_type: whim_types::Error, report: Report<impl Context>) -> Self {
     Self {
-      error_type: Box::new(error_type),
+      error_type,
       report: cast_to_any_report(report),
       trace: SpanTrace::capture(),
     }
@@ -38,8 +36,8 @@ impl Error {
 
 impl Error {
   #[must_use]
-  pub fn as_type(&self) -> &dyn ErrorType {
-    self.error_type.as_ref()
+  pub fn as_type(&self) -> &whim_types::Error {
+    &self.error_type
   }
 
   #[must_use]
@@ -54,23 +52,9 @@ impl Error {
   }
 
   #[must_use]
-  pub fn change_type(mut self, error_type: impl ErrorType) -> Self {
-    self.error_type = Box::new(error_type);
+  pub fn change_type(mut self, error_type: whim_types::Error) -> Self {
+    self.error_type = error_type;
     self
-  }
-
-  #[must_use]
-  pub fn downcast_type<F: ErrorType>(&self) -> Option<&F> {
-    let target = TypeId::of::<F>();
-    if self.error_type.type_id() == target {
-      // SAFETY: This is already validated above this block
-      unsafe {
-        let kind = &*self.error_type as *const dyn ErrorType;
-        Some(&*kind.cast::<F>())
-      }
-    } else {
-      None
-    }
   }
 
   #[must_use]

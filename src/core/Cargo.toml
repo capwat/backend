@@ -1,6 +1,6 @@
 [package]
 name = "whim-core"
-description = "Base crates for implementing other Whim crates"
+description = "Base crate for implementing other Whim crates"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -26,3 +26,6 @@ validator.workspace = true
 
 [dev-dependencies]
 serde_test.workspace = true
+
+[lints]
+workspace = true

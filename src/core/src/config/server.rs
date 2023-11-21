@@ -113,8 +113,8 @@ impl Server {
     from_file(path.as_ref())
   }
 
-  pub const DEFAULT_FILE_NAME: &str = "whim.toml";
-  pub const FILE_ENV: &str = "WHIM_CONFIG_FILE";
+  pub const DEFAULT_FILE_NAME: &'static str = "whim.toml";
+  pub const FILE_ENV: &'static str = "WHIM_CONFIG_FILE";
 
   /// Scans for any available `whim.toml` file from the user's current
   /// directory and its descendants or the `WHIM_CONFIG_FILE` environment

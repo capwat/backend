@@ -30,7 +30,7 @@ impl<'a> Data<'a> {
   }
 
   fn from_enum(ctx: &Context, data: &'a syn::DataEnum) -> Option<Self> {
-    let mut variants = Vec::<Variant>::new();
+    let mut variants = Vec::<Variant<'a>>::new();
     for variant in data.variants.iter() {
       let (style, fields) = Self::from_fields(ctx, &variant.fields)?;
       variants.push(Variant {

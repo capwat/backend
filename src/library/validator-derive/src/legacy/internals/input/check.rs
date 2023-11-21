@@ -4,7 +4,7 @@ use crate::legacy::internals::{
   Context,
 };
 
-pub fn input(ctx: &Context, input: &Input) {
+pub fn input(ctx: &Context, input: &Input<'_>) {
   match &input.data {
     super::Data::Enum(variants) => {
       for variant in variants {
@@ -17,7 +17,7 @@ pub fn input(ctx: &Context, input: &Input) {
   }
 }
 
-fn check_fields(ctx: &Context, fields: std::slice::Iter<Field>) {
+fn check_fields(ctx: &Context, fields: std::slice::Iter<'_, Field<'_>>) {
   fn check_range_like_params<T: Ord + std::fmt::Display>(
     ctx: &Context,
     original: &syn::Field,

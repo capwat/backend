@@ -89,7 +89,7 @@ impl Pool {
   /// please refer to [sqlx's Transaction object documentation](sqlx::Transaction)
   #[doc(hidden)]
   #[tracing::instrument(name = "db.transaction", skip(self))]
-  pub async fn begin(&self) -> Result<Transaction> {
+  pub async fn begin(&self) -> Result<Transaction<'_>> {
     if let Some(inner) = self.pool.try_begin().await.into_db_error()? {
       Ok(inner)
     } else if !self.is_healthy() {
@@ -124,7 +124,7 @@ impl Pool {
   pub async fn wait_until_healthy(&self) -> Result<()> {
     match self.pool.acquire().await {
       Ok(..) => Ok(()),
-      Err(e) if !self.is_healthy() => Err(e).change_context(Error::UnhealthyPool),
+      Err(e @ sqlx::Error::PoolTimedOut) => Err(e).change_context(Error::UnhealthyPool),
       Err(err) => Err(Report::new(Error::Internal(err))),
     }
   }

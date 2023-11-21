@@ -10,3 +10,6 @@ version.workspace = true
 [dependencies]
 serde.workspace = true
 validator = { path = "../validator" }
+
+[lints]
+workspace = true
