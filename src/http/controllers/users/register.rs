@@ -28,9 +28,9 @@ pub async fn register(
   let mut query = sqlx::QueryBuilder::new("select (name = $1) as name_exists");
 
   if form.email.is_some() {
-    query.push(", (email = $2) as email_exists ");
+    query.push(", (email = $2) as email_exists");
   }
-  query.push("from users where name = $1");
+  query.push(" from users where name = $1");
   if form.email.is_some() {
     query.push(" or email = $2");
   }
