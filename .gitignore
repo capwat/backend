@@ -1,0 +1,12 @@
+# Build/environment artifacts
+target/
+.DS_Store
+
+# Lock files
+Cargo.lock
+.$*.bkp
+
+# Environment and secret files
+.env
+capwat.toml
+

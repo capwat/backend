@@ -1,0 +1,25 @@
+[package]
+name = "validator"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[features]
+default = ["derive"]
+derive = ["validator-derive"]
+
+[dependencies]
+indexmap.workspace = true
+serde.workspace = true
+url.workspace = true
+validator-derive = { path = "../validator-derive", optional = true }
+
+[dev-dependencies]
+serde_test.workspace = true
+static_assertions.workspace = true
+
+[lints]
+workspace = true

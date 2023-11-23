@@ -1,0 +1,86 @@
+[workspace]
+members = [
+    "crates/common",
+    "crates/library/*"
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.1-alpha.0"
+authors = ["memothelemo <me@memothelemo.xyz>"]
+edition = "2021"
+license = "AGPL-2.0"
+repository = "https://github.com/capwat/backend"
+rust-version = "1.74.0"
+
+[workspace.dependencies]
+## local crates ##
+capwat_common = { path = "crates/common" }
+
+validator = { path = "crates/library/validator" }
+validator-derive = { path = "crates/library/validator-derive" }
+
+## crypto and security ##
+jsonwebtoken = "9.1.0"
+sha2 = "0.10.8"
+
+## config and serialization ##
+dotenvy = "0.15.7"
+figment = { version = "0.10.12", features = ["env", "toml", "test"] }
+serde = { version = "1.0.190", features = ["derive"] }
+toml_edit = { version = "0.21.0", features = ["serde"] }
+
+## async, std and systems ##
+async-trait = "0.1.74"
+futures = "0.3.29"
+fs-err = "2.11.0"
+once_cell = "1.18.0"
+notify = "6.1.1"
+tokio = { version = "1.34.0", features = ["full"] }
+
+## generators and converters ##
+heck = "0.4.1"
+hex = "0.4.3"
+random-string = "1.0.1"
+
+## error handling ##
+error-stack = "0.4.1"
+thiserror = "1.0.50"
+
+## data types ##
+indexmap = "2.1.0"
+serde_json = "1.0.108"
+serde-value = "0.7.0"
+url = "2.4.1"
+
+## telemetry ##
+tracing = "0.1.40"
+
+## macros ##
+proc-macro2 = "1.0.69"
+quote = "1.0.33"
+syn = "2.0.38"
+
+## testing ##
+serde_test = "1.0.176"
+static_assertions = "1.1.0"
+
+## database and its shims ##
+sqlx = { version = "0.7.2", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono"] }
+
+[workspace.lints.clippy]
+# too pedantic
+doc_markdown = "allow"
+module_name_repetitions = "allow"
+wildcard_imports = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+let_underscore_must_use = "warn"
+non_ascii_literal = "warn"
+pedantic = "warn"
+unwrap_used = "warn"
+
+[workspace.lints.rust]
+rust_2018_idioms = "warn"
+unused = "warn"
