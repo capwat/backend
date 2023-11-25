@@ -47,7 +47,8 @@ impl Auth {
 
   #[must_use]
   pub fn generate_jwt_key() -> MaybeGenerated<Sensitive<String>> {
-    const CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*";
+    const CHARSET: &str =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*";
 
     // Recommended JWT secret key length, it's long but it's worth it.
     let output: String = random_string::generate(64, CHARSET);
@@ -61,7 +62,9 @@ impl Default for Auth {
   /// When this function is called, it will generate a new
   /// randomized JWT secret key from [`Self::generate_jwt_key`].
   fn default() -> Self {
-    let auth = Self { jwt_key: Self::generate_jwt_key(), jwt_key_hash: OnceCell::new() };
+    let auth =
+      Self { jwt_key: Self::generate_jwt_key(), jwt_key_hash: OnceCell::new() };
+
     // We need to precompute the hash upon generating a JWT key
     #[allow(clippy::let_underscore_must_use)]
     let _ = auth.jwt_key_hash();
@@ -83,10 +86,10 @@ impl Validate for Auth {
         jwt_errs.insert("JWT secret key is too big");
       }
 
-      let has_valid_chars = self
-        .jwt_key
-        .chars()
-        .any(|v| v.is_alphabetic() || matches!(v, '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*'));
+      let has_valid_chars = self.jwt_key.chars().any(|v| {
+        v.is_alphabetic()
+          || matches!(v, '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*')
+      });
 
       if !has_valid_chars {
         jwt_errs
@@ -101,7 +104,19 @@ impl Validate for Auth {
 #[cfg(test)]
 mod tests {
   use super::Auth;
+  use sha2::{Digest, Sha224};
   use validator::Validate;
+
+  #[test]
+  fn test_jwt_key_hash() {
+    let auth = Auth::default();
+
+    let mut hasher = Sha224::new();
+    hasher.update(auth.jwt_key.as_bytes());
+
+    let hash = hex::encode(hasher.finalize());
+    assert_eq!(hash, auth.jwt_key_hash());
+  }
 
   #[test]
   fn test_generated_jwt_key() {

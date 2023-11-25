@@ -4,7 +4,9 @@ use std::fmt::{Debug, Display};
 
 /// Keeps the raw sensitive data in memory but it cannot be
 /// accidentally leaked through the console or logs.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+#[derive(
+  Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize,
+)]
 #[serde(transparent)]
 pub struct Sensitive<T>(T);
 

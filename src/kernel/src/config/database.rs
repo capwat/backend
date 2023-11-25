@@ -53,7 +53,10 @@ pub struct DatabasePool {
   pub(crate) min_idle: Option<NonZeroU32>,
   #[serde(default = "DatabasePool::default_pool_size")]
   pub(crate) pool_size: NonZeroU32,
-  #[validate(with = "DatabasePool::validate_pg_url", error = "Invalid Postgres connection URL")]
+  #[validate(
+    with = "DatabasePool::validate_pg_url",
+    error = "Invalid Postgres connection URL"
+  )]
   pub(crate) url: Sensitive<String>,
 }
 
@@ -72,7 +75,7 @@ impl DatabasePool {
   }
 
   #[must_use]
-  pub const fn pool_size(&self) -> u32 {
+  pub const fn size(&self) -> u32 {
     self.pool_size.get()
   }
 
@@ -105,7 +108,8 @@ impl DatabasePool {
   fn validate_pg_url(url: &str) -> bool {
     let mut accepted = false;
     if let Ok(url) = url::Url::parse(url) {
-      accepted = url.as_str().starts_with("postgres://") && url.scheme() == "postgres";
+      accepted =
+        url.as_str().starts_with("postgres://") && url.scheme() == "postgres";
     }
     accepted
   }

@@ -158,7 +158,9 @@ impl std::borrow::Borrow<str> for MaybeGenerated<String> {
   }
 }
 
-impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for MaybeGenerated<T> {
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de>
+  for MaybeGenerated<T>
+{
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
     D: serde::Deserializer<'de>,
@@ -194,9 +196,13 @@ mod tests {
       MaybeGenerated::Generated("auto-generated".to_string())
     }
 
-    serde_test::assert_tokens(&MaybeGenerated::Set("Hello".to_string()), &[Token::Str("Hello")]);
+    serde_test::assert_tokens(
+      &MaybeGenerated::Set("Hello".to_string()),
+      &[Token::Str("Hello")],
+    );
 
-    let output = serde_json::from_str::<TestStruct>(r#"{ "result": "set" }"#).unwrap();
+    let output =
+      serde_json::from_str::<TestStruct>(r#"{ "result": "set" }"#).unwrap();
     assert_eq!(output.result, MaybeGenerated::Set("set".to_string()));
 
     let output = serde_json::from_str::<TestStruct>("{}").unwrap();

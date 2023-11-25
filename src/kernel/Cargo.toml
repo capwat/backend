@@ -1,5 +1,5 @@
 [package]
-name = "capwat-common"
+name = "capwat-kernel"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -9,27 +9,32 @@ rust-version.workspace = true
 
 [features]
 hot-reloading = []
+server-impl = []
 
 [dependencies]
+capwat-types = { workspace = true, features = ["server_impl"] }
+
 async-trait.workspace = true
+chrono.workspace = true
 error-stack.workspace = true
 hex.workspace = true
 once_cell.workspace = true
 random-string.workspace = true
 serde.workspace = true
 sha2.workspace = true
+sqlx.workspace = true
 thiserror.workspace = true
+tracing-error.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 url.workspace = true
 validator.workspace = true
 
-fs-err.workspace = true
-figment.workspace = true
-dotenvy.workspace = true
-notify.workspace = true
-tracing-subscriber.workspace = true
-sqlx.workspace = true
+# fs-err.workspace = true
+# figment.workspace = true
+# dotenvy.workspace = true
+# notify.workspace = true
+# tracing-subscriber.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

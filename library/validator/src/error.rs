@@ -61,7 +61,11 @@ impl FieldBuilder {
     Self(IndexMap::default())
   }
 
-  pub fn insert(&mut self, key: impl Into<Cow<'static, str>>, value: ValidateError) {
+  pub fn insert(
+    &mut self,
+    key: impl Into<Cow<'static, str>>,
+    value: ValidateError,
+  ) {
     if !value.is_empty() {
       self.0.insert(key.into(), value);
     }
@@ -94,7 +98,9 @@ impl std::fmt::Debug for ValidateError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       ValidateError::Fields(n) => n.fmt(f),
-      ValidateError::Messages(n) => f.debug_map().entry(&"_errors", &n).finish(),
+      ValidateError::Messages(n) => {
+        f.debug_map().entry(&"_errors", &n).finish()
+      },
       ValidateError::Slice(n) => n.fmt(f),
     }
   }
@@ -271,13 +277,15 @@ mod tests {
   fn test_debug_fmt() {
     const EXPECTED_FMT_MSG: &str = r#"{"name": [None, Some({"_errors": ["Name is empty"]}), None], "age": {"_errors": ["invalid age"]}}"#;
 
-    let error = Hello { names: vec!["Mike", "", "John"], age: 0 }.validate().unwrap_err();
+    let error =
+      Hello { names: vec!["Mike", "", "John"], age: 0 }.validate().unwrap_err();
     assert_eq!(EXPECTED_FMT_MSG, format!("{error:?}"));
   }
 
   #[test]
   fn test_serde_impl() {
-    let error = Hello { names: vec!["Mike", "", "John"], age: 0 }.validate().unwrap_err();
+    let error =
+      Hello { names: vec!["Mike", "", "John"], age: 0 }.validate().unwrap_err();
     serde_test::assert_tokens(
       &error,
       &[

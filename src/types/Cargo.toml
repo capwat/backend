@@ -1,0 +1,31 @@
+[package]
+name = "capwat-types"
+description = "Types for Capwat public API"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+server_impl = ["sqlx"]
+
+[dependencies]
+chrono.workspace = true
+heck.workspace = true
+once_cell.workspace = true
+serde.workspace = true
+static_assertions.workspace = true
+thiserror.workspace = true
+
+sqlx = { workspace = true, optional = true }
+
+# TODO: implement validator independent type
+validator.workspace = true
+
+[dev-dependencies]
+serde_test.workspace = true
+
+[lints]
+workspace = true
