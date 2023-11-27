@@ -46,7 +46,7 @@ hex = "0.4.3"
 random-string = "1.0.1"
 
 ## error handling ##
-error-stack = "0.4.1"
+error-stack = { git = "https://github.com/memothelemo/error-stack", rev = "3c4b10" }
 thiserror = "1.0.50"
 
 ## data types ##

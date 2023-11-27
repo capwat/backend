@@ -118,7 +118,7 @@ pub(super) trait ErrorExt2 {
   fn is_readonly(&self) -> bool;
 }
 
-impl ErrorExt2 for error_stack::Report<PoolError> {
+impl<C> ErrorExt2 for error_stack::Report<C> {
   fn is_unhealthy(&self) -> bool {
     self
       .downcast_ref::<PoolError>()
