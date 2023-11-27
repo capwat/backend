@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "library/*",
-    "src/*"
+    "src/kernel",
+    "src/types",
 ]
 resolver = "2"
 
