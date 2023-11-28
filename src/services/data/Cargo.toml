@@ -1,0 +1,17 @@
+[package]
+name = "capwat-data-service"
+description = "Implement of Capwat's data services both implemented with client and server layer"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+capwat-kernel.workspace = true
+sqlx.workspace = true
+
+[lints]
+workspace = true
