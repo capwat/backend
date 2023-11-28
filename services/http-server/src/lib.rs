@@ -1,11 +1,11 @@
-use capwat_data_service::ClientLayer;
 use capwat_kernel::{
   entity::id::{marker::UserMarker, Id},
   services::DataService,
 };
+use std::sync::Arc;
 
 pub struct App {
-  pub data: ClientLayer,
+  pub data: Arc<dyn DataService>,
 }
 
 pub async fn hello(app: App) {
