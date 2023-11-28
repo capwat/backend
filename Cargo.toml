@@ -1,8 +1,9 @@
 [workspace]
 members = [
     "library/*",
-    "src/kernel",
-    "src/types",
+    "kernel",
+    "services/*",
+    "types",
 ]
 resolver = "2"
 
@@ -16,8 +17,8 @@ rust-version = "1.74.0"
 
 [workspace.dependencies]
 ## local crates ##
-capwat-kernel = { path = "src/kernel" }
-capwat-types = { path = "src/types" }
+capwat-kernel = { path = "kernel" }
+capwat-types = { path = "types" }
 
 validator = { path = "library/validator" }
 validator-derive = { path = "library/validator-derive" }
