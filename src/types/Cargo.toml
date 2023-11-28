@@ -16,6 +16,7 @@ chrono.workspace = true
 heck.workspace = true
 once_cell.workspace = true
 serde.workspace = true
+serde-value.workspace = true
 static_assertions.workspace = true
 thiserror.workspace = true
 
@@ -25,6 +26,7 @@ sqlx = { workspace = true, optional = true }
 validator.workspace = true
 
 [dev-dependencies]
+serde_json.workspace = true
 serde_test.workspace = true
 
 [lints]
