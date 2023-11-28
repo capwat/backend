@@ -1,24 +1,29 @@
-use capwat_types::error::{ErrorCategory, ErrorType, Ignored};
+use capwat_types::error::ErrorType;
 use error_stack::{Context, Report};
+use percent_encoding::NON_ALPHANUMERIC;
+use thiserror::Error;
 use tracing_error::SpanTrace;
 
 mod ext;
+mod impls;
+
 pub use ext::*;
 
-pub struct Error<T: ErrorCategory> {
-  error_type: ErrorType<T>,
+pub struct Error {
+  error_type: ErrorType,
   report: Option<Report>,
   trace: SpanTrace,
 }
 
-pub type Result<T, E = Ignored> = std::result::Result<T, Error<E>>;
+pub type Result<T> = std::result::Result<T, Error>;
 
-impl<T: ErrorCategory> Error<T> {
-  pub fn new(error_type: ErrorType<T>) -> Self {
+impl Error {
+  #[must_use]
+  pub fn new(error_type: ErrorType) -> Self {
     Self { error_type, report: None, trace: SpanTrace::capture() }
   }
 
-  pub fn from_context(error_type: ErrorType<T>, context: impl Context) -> Self {
+  pub fn from_context(error_type: ErrorType, context: impl Context) -> Self {
     Self {
       error_type,
       report: Some(Report::new(context).as_any()),
@@ -26,8 +31,9 @@ impl<T: ErrorCategory> Error<T> {
     }
   }
 
+  #[must_use]
   pub fn from_report(
-    error_type: ErrorType<T>,
+    error_type: ErrorType,
     report: Report<impl Context>,
   ) -> Self {
     Self {
@@ -38,9 +44,9 @@ impl<T: ErrorCategory> Error<T> {
   }
 }
 
-impl<T: ErrorCategory> Error<T> {
+impl Error {
   #[must_use]
-  pub fn as_type(&self) -> &ErrorType<T> {
+  pub fn as_type(&self) -> &ErrorType {
     &self.error_type
   }
 
@@ -57,10 +63,8 @@ impl<T: ErrorCategory> Error<T> {
     self
   }
 
-  pub fn change_type<C: ErrorCategory>(
-    self,
-    error_type: ErrorType<C>,
-  ) -> Error<C> {
+  #[must_use]
+  pub fn change_type(self, error_type: ErrorType) -> Self {
     Error { error_type, report: self.report, trace: self.trace }
   }
 
@@ -70,7 +74,92 @@ impl<T: ErrorCategory> Error<T> {
   }
 }
 
-impl<T: ErrorCategory> std::fmt::Debug for Error<T> {
+impl Error {
+  #[must_use]
+  pub fn from_tonic(status: &tonic::Status) -> Self {
+    #[derive(Debug, Error)]
+    #[error("x-error-data metadata from gRPC transmission is invalid")]
+    struct InvalidErrorData;
+
+    if let Some(data) = status.metadata().get("x-error-data").and_then(|v| {
+      percent_encoding::percent_decode(v.as_bytes()).decode_utf8().ok()
+    }) {
+      if let Ok(error_type) = serde_json::from_str(&data) {
+        return Self::new(error_type);
+      }
+    }
+
+    Self::new(ErrorType::Internal)
+  }
+
+  #[must_use]
+  pub fn into_tonic_status(&self) -> tonic::Status {
+    use tonic::Code;
+
+    struct Printer<'a>(&'a Error);
+
+    impl<'a> std::fmt::Display for Printer<'a> {
+      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.error_type.message(f)
+      }
+    }
+
+    let code = match self.error_type {
+      ErrorType::ReadonlyMode => Code::Unavailable,
+      ErrorType::NotAuthenticated => Code::Unauthenticated,
+      ErrorType::Internal | ErrorType::Unknown(..) => Code::Internal,
+    };
+
+    // Form an error message for the client
+    let message = Printer(self).to_string();
+
+    let mut status = tonic::Status::new(code, message);
+    let metadata = status.metadata_mut();
+
+    // Keep the rest of the error data in JSON on a header
+    //
+    // This line below is very critical for serializing
+    // internal errors if serialization with other error
+    // types fails.
+    if matches!(self.error_type, ErrorType::Internal) {
+      let content = serde_json::to_string(&self.error_type)
+        .expect("failed to serialize internal error struct");
+
+      let content =
+        percent_encoding::percent_encode(content.as_bytes(), NON_ALPHANUMERIC)
+          .to_string();
+
+      metadata.insert(
+        "x-error-data",
+        content.parse().expect("failed to parse encoded error data"),
+      );
+    } else {
+      match serde_json::to_string(&self.error_type) {
+        Ok(data) => {
+          let content =
+            percent_encoding::percent_encode(data.as_bytes(), NON_ALPHANUMERIC)
+              .to_string();
+
+          match content.parse() {
+            Ok(n) => metadata.insert("x-error-data", n),
+            Err(e) => {
+              return Error::from_context(ErrorType::Internal, e)
+                .into_tonic_status()
+            },
+          };
+        },
+        Err(err) => {
+          return Error::from_context(ErrorType::Internal, err)
+            .into_tonic_status()
+        },
+      }
+    }
+
+    status
+  }
+}
+
+impl std::fmt::Debug for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Error")
       .field("type", &self.error_type)
@@ -80,9 +169,9 @@ impl<T: ErrorCategory> std::fmt::Debug for Error<T> {
   }
 }
 
-impl<T: ErrorCategory> std::fmt::Display for Error<T> {
+impl std::fmt::Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    self.error_type.server_message(f)?;
+    self.error_type.fmt(f)?;
     writeln!(f, ": {:?}", self.report)?;
     std::fmt::Display::fmt(&self.trace, f)
   }

@@ -1,0 +1,16 @@
+syntax = "proto3";
+package data;
+
+import "schema.proto";
+
+service Data {
+    rpc GetUserById (GetUserByIdRequest) returns (GetUserByIdResponse) {}
+}
+
+message GetUserByIdResponse {
+    optional schema.User user = 1;
+}
+
+message GetUserByIdRequest {
+    uint64 id = 1;
+}

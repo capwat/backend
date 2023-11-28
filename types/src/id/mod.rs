@@ -159,6 +159,7 @@ impl<'de, T: Marker> serde::Deserialize<'de> for Id<T> {
   }
 }
 
+// TODO: Serialize as number if it is an invalid ID just like on Discord
 impl<T: Marker> serde::Serialize for Id<T> {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where

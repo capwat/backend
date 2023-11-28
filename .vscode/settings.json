@@ -2,5 +2,13 @@
     "[rust]": {
         "editor.formatOnSave": true
     },
+    "protoc": {
+        "path": "protoc",
+        "compile_on_save": false,
+        "options": [
+            "--proto_path=${workspaceRoot}/proto"
+        ]
+    },
+    "rust-analyzer.cargo.buildScripts.enable": true,
     "rust-analyzer.check.command": "clippy"
 }

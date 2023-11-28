@@ -1,60 +1,42 @@
-use capwat_types::error::{ErrorCategory, ErrorType, Ignored};
+use capwat_types::error::ErrorType;
 use error_stack::Context;
 
 use super::{Error, Result};
 
-pub trait StdContext<Err: ErrorCategory = Ignored> {
+pub trait StdContext {
   type Ok;
 
-  fn with_capwat_error<Category: ErrorCategory>(
-    self,
-    error_type: ErrorType<Category>,
-  ) -> Result<Self::Ok, Category>;
-
-  fn into_capwat_error(self) -> Result<Self::Ok, Err>;
+  fn with_capwat(self, error_type: ErrorType) -> Result<Self::Ok>;
+  fn into_capwat(self) -> Result<Self::Ok>;
 }
 
-pub trait ErrorStackContext<Err: ErrorCategory = Ignored> {
+pub trait ErrorStackContext {
   type Ok;
 
-  fn with_capwat_error<Category: ErrorCategory>(
-    self,
-    error_type: ErrorType<Category>,
-  ) -> Result<Self::Ok, Category>;
-
-  fn into_capwat_error(self) -> Result<Self::Ok, Err>;
+  fn with_capwat_error(self, error_type: ErrorType) -> Result<Self::Ok>;
+  fn into_capwat_error(self) -> Result<Self::Ok>;
 }
 
-impl<T, E: ErrorCategory, C: Context> StdContext<E>
-  for std::result::Result<T, C>
-{
+impl<T, C: Context> StdContext for std::result::Result<T, C> {
   type Ok = T;
 
-  fn with_capwat_error<Category: ErrorCategory>(
-    self,
-    error_type: ErrorType<Category>,
-  ) -> Result<T, Category> {
+  fn with_capwat(self, error_type: ErrorType) -> Result<T> {
     self.map_err(|e| Error::from_context(error_type, e))
   }
 
-  fn into_capwat_error(self) -> Result<T, E> {
+  fn into_capwat(self) -> Result<T> {
     self.map_err(|e| Error::from_context(ErrorType::Internal, e))
   }
 }
 
-impl<T, E: ErrorCategory, C: Context> ErrorStackContext<E>
-  for error_stack::Result<T, C>
-{
+impl<T, C: Context> ErrorStackContext for error_stack::Result<T, C> {
   type Ok = T;
 
-  fn with_capwat_error<Category: ErrorCategory>(
-    self,
-    error_type: ErrorType<Category>,
-  ) -> Result<T, Category> {
+  fn with_capwat_error(self, error_type: ErrorType) -> Result<T> {
     self.map_err(|e| Error::from_report(error_type, e))
   }
 
-  fn into_capwat_error(self) -> Result<T, E> {
+  fn into_capwat_error(self) -> Result<T> {
     self.map_err(|e| Error::from_report(ErrorType::Internal, e))
   }
 }

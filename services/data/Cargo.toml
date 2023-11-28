@@ -1,6 +1,5 @@
 [package]
 name = "capwat-data-service"
-description = "Implement of Capwat's data services both implemented with client and server layer"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -8,10 +7,22 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+grpc = []
+server = []
+
 [dependencies]
-async-trait.workspace = true
 capwat-kernel.workspace = true
+error-stack.workspace = true
+prost.workspace = true
 sqlx.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[build-dependencies]
+tonic-build.workspace = true
 
 [lints]
 workspace = true
