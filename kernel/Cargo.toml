@@ -7,6 +7,11 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[[bench]]
+name = "error"
+path = "benches/error.rs"
+harness = false
+
 [features]
 hot-reloading = []
 server-impl = []
@@ -40,6 +45,8 @@ validator.workspace = true
 # tracing-subscriber.workspace = true
 
 [dev-dependencies]
+bencher.workspace = true
+serde-value.workspace = true
 serde_test.workspace = true
 static_assertions.workspace = true
 
