@@ -1,9 +1,10 @@
+use capwat_types::Sensitive;
 use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use sha2::Digest;
 use validator::{Validate, ValidateError};
 
-use crate::util::{MaybeGenerated, Sensitive};
+use crate::util::MaybeGenerated;
 
 #[derive(Deserialize)]
 pub struct Auth {

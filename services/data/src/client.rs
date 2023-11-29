@@ -3,6 +3,7 @@ use capwat_kernel::{
     id::{marker::UserMarker, Id},
     User,
   },
+  error::{Error, ErrorType},
   services::{impl_dev::*, DataService},
 };
 use error_stack::{Result as StackResult, ResultExt};
@@ -14,7 +15,9 @@ use tonic::{
   transport::{Channel, Endpoint, Uri},
 };
 
-use crate::protobuf::{data_client::DataClient, GetUserByIdRequest};
+use crate::protobuf::{
+  data_client::DataClient, GetUserByIdRequest, GetUserByLoginRequest,
+};
 
 #[derive(Debug)]
 pub struct ClientLayer {
@@ -71,6 +74,41 @@ impl DataService for ClientLayer {
     if let Some(response) = response {
       let user = User {
         id,
+        created_at: response.created_at.parse().into_capwat()?,
+        name: response.name,
+        email: response.email,
+        display_name: response.display_name,
+        password_hash: response.password_hash,
+        updated_at: if let Some(updated_at) = response.updated_at {
+          Some(updated_at.parse().into_capwat()?)
+        } else {
+          None
+        },
+      };
+      Ok(Some(user))
+    } else {
+      Ok(None)
+    }
+  }
+
+  #[tracing::instrument]
+  async fn find_user_by_login(
+    &self,
+    email_or_username: &str,
+  ) -> ServiceResult<Option<User>> {
+    let mut client = self.client.lock().await;
+    let response = client
+      .get_user_by_login(GetUserByLoginRequest {
+        email_or_username: email_or_username.to_string(),
+      })
+      .await?
+      .into_inner()
+      .user;
+
+    if let Some(response) = response {
+      let user = User {
+        id: Id::new_checked(response.id)
+          .ok_or_else(|| Error::new(ErrorType::Internal))?,
         created_at: response.created_at.parse().into_capwat()?,
         name: response.name,
         email: response.email,

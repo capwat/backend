@@ -1,9 +1,8 @@
+use capwat_types::Sensitive;
 use serde::Deserialize;
 use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 use validator::Validate;
-
-use crate::util::Sensitive;
 
 const DEFAULT_POOL_SIZE: u32 = 5;
 const DEFAULT_POOL_TIMEOUT_SECS: u64 = 5;

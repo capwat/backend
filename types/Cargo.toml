@@ -20,6 +20,7 @@ server_impl = ["sqlx"]
 chrono.workspace = true
 heck.workspace = true
 once_cell.workspace = true
+regex.workspace = true
 serde.workspace = true
 serde-value.workspace = true
 static_assertions.workspace = true

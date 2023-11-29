@@ -4,11 +4,16 @@ package data;
 import "schema.proto";
 
 service Data {
-    rpc GetUserById (GetUserByIdRequest) returns (GetUserByIdResponse) {}
+    rpc GetUserById (GetUserByIdRequest) returns (GetUserResponse) {}
+    rpc GetUserByLogin (GetUserByLoginRequest) returns (GetUserResponse) {}
 }
 
-message GetUserByIdResponse {
+message GetUserResponse {
     optional schema.User user = 1;
+}
+
+message GetUserByLoginRequest {
+    string email_or_username = 1;
 }
 
 message GetUserByIdRequest {

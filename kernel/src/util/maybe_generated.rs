@@ -1,4 +1,4 @@
-use crate::util::Sensitive;
+use capwat_types::Sensitive;
 
 /// This type tells whether the value is automatically generated
 /// from a generator or manually set (from deserialization or declaration).

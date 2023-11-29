@@ -1,4 +1,4 @@
-use capwat_types::error::ErrorType;
+pub use capwat_types::error::ErrorType;
 use error_stack::{Context, Report};
 use percent_encoding::NON_ALPHANUMERIC;
 use thiserror::Error;

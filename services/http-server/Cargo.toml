@@ -10,7 +10,11 @@ rust-version.workspace = true
 [features]
 
 [dependencies]
+async-trait.workspace = true
 capwat-kernel.workspace = true
+capwat-types.workspace = true
+serde.workspace = true
+validator.workspace = true
 
 [lints]
 workspace = true

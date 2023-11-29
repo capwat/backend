@@ -1,18 +1,17 @@
-use capwat_kernel::{
-  entity::id::{marker::UserMarker, Id},
-  services::DataService,
-};
-use std::sync::Arc;
+use std::fmt::Debug;
 
-pub struct App {
-  pub data: Arc<dyn DataService>,
-}
+use async_trait::async_trait;
+use capwat_kernel::error::Result;
+use serde::Serialize;
 
-pub async fn hello(app: App) {
-  let user = app
-    .data
-    .find_user_by_id(Id::<UserMarker>::new(1000))
-    .await
-    .unwrap()
-    .unwrap();
+mod forms;
+
+pub mod app;
+pub use app::App;
+
+#[async_trait]
+pub trait Perform: Debug + Send + Sync + validator::Validate {
+  type Response: Serialize;
+
+  async fn perform(&self, app: App) -> Result<Self::Response>;
 }
