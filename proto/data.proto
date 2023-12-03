@@ -2,20 +2,29 @@ syntax = "proto3";
 package data;
 
 import "schema.proto";
+import "google/protobuf/empty.proto";
 
 service Data {
-    rpc GetUserById (GetUserByIdRequest) returns (GetUserResponse) {}
-    rpc GetUserByLogin (GetUserByLoginRequest) returns (GetUserResponse) {}
+    rpc CreateUser (CreateUserRequest) returns (FindUserReply) {}
+    rpc FindUserById (FindUserByIdRequest) returns (FindUserReply) {}
+    rpc FindUserByLogin (FindUserByLoginRequest) returns (FindUserReply) {}
+    rpc GetSecret (google.protobuf.Empty) returns (schema.Secret) {}
 }
 
-message GetUserResponse {
+message CreateUserRequest {
+    string name = 1;
+    optional string email = 2;
+    string password_hash = 4;
+}
+
+message FindUserReply {
     optional schema.User user = 1;
 }
 
-message GetUserByLoginRequest {
+message FindUserByLoginRequest {
     string email_or_username = 1;
 }
 
-message GetUserByIdRequest {
+message FindUserByIdRequest {
     uint64 id = 1;
 }

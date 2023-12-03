@@ -1,0 +1,4 @@
+# All Capwat service clients using gRPC are mandated
+# to have a certificate!
+[data.tls]
+root_ca = "certs/root_ca.pem"

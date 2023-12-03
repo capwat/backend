@@ -1,0 +1,17 @@
+[package]
+name = "capwat-api-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+capwat-kernel = { workspace = true, features = ["grpc"] }
+capwat-types.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

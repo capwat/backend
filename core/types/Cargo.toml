@@ -1,0 +1,30 @@
+[package]
+name = "capwat-types"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+server_impl = ["sqlx", "validator"]
+db-testing = []
+
+[dependencies]
+chrono.workspace = true
+indexmap.workspace = true
+serde.workspace = true
+serde-value.workspace = true
+thiserror.workspace = true
+
+sqlx = { workspace = true, optional = true }
+validator = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+serde_test.workspace = true
+static_assertions.workspace = true
+
+[lints]
+workspace = true

@@ -7,13 +7,13 @@ use crate::legacy::internals::{
 pub fn input(ctx: &Context, input: &Input<'_>) {
   match &input.data {
     super::Data::Enum(variants) => {
-      for variant in variants {
-        check_fields(ctx, variant.fields.iter());
-      }
-    }
+      variants
+        .iter()
+        .for_each(|variant| check_fields(ctx, variant.fields.iter()));
+    },
     super::Data::Struct(.., fields) => {
       check_fields(ctx, fields.iter());
-    }
+    },
   }
 }
 
@@ -37,7 +37,7 @@ fn check_fields(ctx: &Context, fields: std::slice::Iter<'_, Field<'_>>) {
             "the minimum value is equal to the maximum value, do you mean to use `equal = ...`?",
           ),
         );
-      }
+      },
       Some(std::cmp::Ordering::Greater) => {
         // It is already checked from is_min_greater
         #[allow(clippy::unwrap_used)]
@@ -49,12 +49,16 @@ fn check_fields(ctx: &Context, fields: std::slice::Iter<'_, Field<'_>>) {
             max.unwrap()
           ),
         );
-      }
-      _ => {}
+      },
+      _ => {},
     }
   }
 
-  fn check_conflicting_attrs(ctx: &Context, attrs: &attr::Field, original: &syn::Field) {
+  fn check_conflicting_attrs(
+    ctx: &Context,
+    attrs: &attr::Field,
+    original: &syn::Field,
+  ) {
     let has_length_attr = attrs.length().is_some();
     let has_ranges_attr = attrs.ranges().is_some();
 
@@ -79,7 +83,9 @@ fn check_fields(ctx: &Context, fields: std::slice::Iter<'_, Field<'_>>) {
     }
 
     if let Some(params) = attrs.length() {
-      if params.equal.is_some() && (params.min.is_some() || params.max.is_some()) {
+      if params.equal.is_some()
+        && (params.min.is_some() || params.max.is_some())
+      {
         return ctx.spanned_error(original, format_args!(
           "length attribute has conflicting requirements. `{} = ...` and/or `{} = ...`, or `{} = ...` must be either set",
           attr::PATH_LENGTH_MIN, attr::PATH_LENGTH_MAX, attr::PATH_LENGTH_EQUAL

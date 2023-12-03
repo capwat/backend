@@ -29,12 +29,7 @@ struct Attribute<'a, T> {
 
 impl<'a, T> Attribute<'a, T> {
   fn new(ctx: &'a Context, name: &'static str) -> Self {
-    Self {
-      ctx,
-      name,
-      tokens: TokenStream::new(),
-      value: None,
-    }
+    Self { ctx, name, tokens: TokenStream::new(), value: None }
   }
 
   fn set<A: ToTokens>(&mut self, obj: A, value: T) {
@@ -80,18 +75,25 @@ pub struct Ranges {
 }
 
 impl Ranges {
-  fn from_parsed_meta(ctx: &Context, meta: &ParseNestedMeta<'_>) -> syn::Result<Self> {
+  fn from_parsed_meta(
+    ctx: &Context,
+    meta: &ParseNestedMeta<'_>,
+  ) -> syn::Result<Self> {
     // #[validate(length([min = ...] [max = ...] [equal = ...]))]
     let mut field = Self::default();
     meta.parse_nested_meta(|meta| {
       let meta_path = &meta.path;
       meta.input.parse::<Token![=]>()?;
       if meta_path.is_ident(PATH_LENGTH_MIN) {
-        if let Some(value) = get_lit_int::<isize>(ctx, PATH_LENGTH, PATH_LENGTH_MIN, &meta)? {
+        if let Some(value) =
+          get_lit_int::<isize>(ctx, PATH_LENGTH, PATH_LENGTH_MIN, &meta)?
+        {
           field.min = Some(value);
         }
       } else if meta_path.is_ident(PATH_LENGTH_MAX) {
-        if let Some(value) = get_lit_int::<isize>(ctx, PATH_LENGTH, PATH_LENGTH_MAX, &meta)? {
+        if let Some(value) =
+          get_lit_int::<isize>(ctx, PATH_LENGTH, PATH_LENGTH_MAX, &meta)?
+        {
           field.max = Some(value);
         }
       } else {
@@ -117,7 +119,10 @@ pub struct Length {
 }
 
 impl Length {
-  fn from_parsed_meta(ctx: &Context, meta: &ParseNestedMeta<'_>) -> syn::Result<Self> {
+  fn from_parsed_meta(
+    ctx: &Context,
+    meta: &ParseNestedMeta<'_>,
+  ) -> syn::Result<Self> {
     // #[validate(length([min = ...] [max = ...] [equal = ...]))]
     let mut field = Self::default();
     meta.parse_nested_meta(|meta| {
@@ -169,7 +174,10 @@ pub struct Field {
 
 impl Field {
   pub fn requires_extend(&self) -> bool {
-    self.allow_nested() || self.length.is_some() || self.ranges.is_some() || self.checker.is_some()
+    self.allow_nested()
+      || self.length.is_some()
+      || self.ranges.is_some()
+      || self.checker.is_some()
   }
 
   pub fn allow_optional(&self) -> bool {
@@ -211,10 +219,8 @@ impl Field {
         continue;
       }
 
-      if let syn::Meta::List(meta) = &attr.meta {
-        if meta.tokens.is_empty() {
-          continue;
-        }
+      if matches!(&attr.meta, syn::Meta::List(meta) if meta.tokens.is_empty()) {
+        continue;
       }
 
       if let Err(err) = attr.parse_nested_meta(|meta| {
@@ -239,7 +245,9 @@ impl Field {
           optional_attr.set(meta_path, ());
         } else {
           let path = meta_path.to_token_stream().to_string().replace(' ', "");
-          return Err(meta.error(format_args!("unknown validator field attribute `{path}`")));
+          return Err(meta.error(format_args!(
+            "unknown validator field attribute `{path}`"
+          )));
         }
         Ok(())
       }) {

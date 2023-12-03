@@ -18,7 +18,8 @@ pub fn derive_validate(input: &DeriveInput) -> ExpandResult {
   ctx.check()?;
 
   let body = generate_body(&input);
-  let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+  let (impl_generics, ty_generics, where_clause) =
+    input.generics.split_for_impl();
   let name = input.ident;
 
   Ok(quote! {
@@ -33,21 +34,19 @@ pub fn derive_validate(input: &DeriveInput) -> ExpandResult {
 fn generate_body(input: &Input<'_>) -> TokenStream {
   match &input.data {
     Data::Enum(variants) => {
-      let patterns = variants
-        .iter()
-        .map(generate_variant_checker)
-        .collect::<TokenStream>();
+      let patterns =
+        variants.iter().map(generate_variant_checker).collect::<TokenStream>();
 
       quote! {
         match &self {
           #patterns
         }
       }
-    }
+    },
     Data::Struct(style, fields) => {
       let preindex = quote!(self.);
       generate_fields_checker(fields, &preindex, *style)
-    }
+    },
   }
 }
 
@@ -62,19 +61,19 @@ fn generate_variant_checker(variant: &Variant<'_>) -> TokenStream {
       quote! {
         Self::#variant_ident { #(ref #members),* } => { #body },
       }
-    }
+    },
     Style::Tuple => {
       let field_names = (0..variant.fields.len())
         .map(|i| syn::Ident::new(&format!("__field{i}"), Span::call_site()));
       quote! {
         Self::#variant_ident(#(ref #field_names),*) => { #body },
       }
-    }
+    },
     Style::Unit => {
       quote! {
         Self::#variant_ident => Ok(()),
       }
-    }
+    },
   }
 }
 
@@ -117,18 +116,15 @@ fn generate_fields_checker(
   body
 }
 
-fn generate_for_length_attrs(attr: &attr::Length) -> (TokenStream, TokenStream, TokenStream) {
-  let min = attr
-    .min
-    .map_or_else(|| quote! { None }, |v| quote! { Some(#v) });
+fn generate_for_length_attrs(
+  attr: &attr::Length,
+) -> (TokenStream, TokenStream, TokenStream) {
+  let min = attr.min.map_or_else(|| quote! { None }, |v| quote! { Some(#v) });
 
-  let max = attr
-    .max
-    .map_or_else(|| quote! { None }, |v| quote! { Some(#v) });
+  let max = attr.max.map_or_else(|| quote! { None }, |v| quote! { Some(#v) });
 
-  let equal = attr
-    .equal
-    .map_or_else(|| quote! { None }, |v| quote! { Some(#v) });
+  let equal =
+    attr.equal.map_or_else(|| quote! { None }, |v| quote! { Some(#v) });
 
   (min, max, equal)
 }
@@ -138,7 +134,7 @@ fn fix_member_name(member: &syn::Member) -> syn::Ident {
     syn::Member::Named(data) => data.clone(),
     syn::Member::Unnamed(data) => {
       syn::Ident::new(&format!("__field{}", data.index), Span::call_site())
-    }
+    },
   }
 }
 
@@ -148,24 +144,21 @@ fn generate_struct_field_checker(
   style: Style,
 ) -> TokenStream {
   let member = fix_member_name(&field.member);
-  let preindex_inner = if field.attrs.allow_optional() {
-    quote!()
-  } else {
-    preindex.clone()
-  };
+  let preindex_inner =
+    if field.attrs.allow_optional() { quote!() } else { preindex.clone() };
 
   // we need to build the if chain
   let mut body = TokenStream::new();
 
   // prioritize builtins before custom implementations
   if field.attrs.allow_nested() && !matches!(style, Style::Unit) {
-    let inner_body = match style {
-      Style::Struct => {
-        let member_as_str = utils::make_lit_str(&member);
-        quote!( err.insert(#member_as_str, nested_err); )
-      }
-      Style::Tuple => quote!( err.insert(nested_err); ),
-      Style::Unit => unreachable!(),
+    let inner_body = if matches!(style, Style::Struct) {
+      let member_as_str = utils::make_lit_str(&member);
+      quote!( err.insert(#member_as_str, nested_err); )
+    } else if matches!(style, Style::Tuple) {
+      quote!( err.insert(nested_err); )
+    } else {
+      unreachable!()
     };
 
     body.extend(quote! {{
@@ -178,10 +171,10 @@ fn generate_struct_field_checker(
   if let Some(length) = field.attrs.length() {
     // TODO: Use the actual parsed LitInt instead.
     let (min, max, equal) = generate_for_length_attrs(length);
-    let error_message = utils::make_lit_str("Value must be in between the required length");
+    let error_message =
+      utils::make_lit_str("Value must be in between the required length");
 
-    let length_checker =
-      quote!( ::validator::extras::validate_length(& #preindex_inner #member, #min, #max, #equal) );
+    let length_checker = quote!( ::validator::extras::validate_length(& #preindex_inner #member, #min, #max, #equal) );
 
     body.extend(make_base_field_checker(
       &error_message,
@@ -239,7 +232,7 @@ fn make_base_field_checker(
     Style::Struct => {
       let member_as_str = utils::make_lit_str(member);
       quote!( err.insert(#member_as_str, msg.build()); )
-    }
+    },
     Style::Tuple => quote!( err.insert(msg.build()); ),
     Style::Unit => unreachable!(),
   });

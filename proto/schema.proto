@@ -1,5 +1,4 @@
 syntax = "proto3";
-
 package schema;
 
 message User {
@@ -10,4 +9,9 @@ message User {
     optional string display_name = 5;
     string password_hash = 6;
     optional string updated_at = 7;
+}
+
+message Secret {
+    uint64 id = 1;
+    string jwt = 2;
 }

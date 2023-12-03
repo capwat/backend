@@ -1,128 +1,70 @@
-use capwat_kernel::{
-  entity::{
-    id::{marker::UserMarker, Id},
-    User,
-  },
-  error::{Error, ErrorType},
-  services::{impl_dev::*, DataService},
-};
-use error_stack::{Result as StackResult, ResultExt};
-use std::{str::FromStr, sync::Arc};
-use thiserror::Error;
-use tokio::sync::Mutex;
-use tonic::{
-  async_trait,
-  transport::{Channel, Endpoint, Uri},
-};
+use async_trait::async_trait;
+use capwat_kernel::config::GrpcConfig;
+use capwat_kernel::drivers::{self, prelude::*};
+use capwat_kernel::entity::{Secret, User};
+use capwat_kernel::grpc::proto::data_client::DataClient;
+use capwat_kernel::grpc::{GrpcClient, GrpcClientInitError};
+use capwat_types::id::marker::UserMarker;
+use capwat_types::Id;
 
-use crate::protobuf::{
-  data_client::DataClient, GetUserByIdRequest, GetUserByLoginRequest,
-};
+use error_stack::Result;
+use tonic::transport::Channel;
 
 #[derive(Debug)]
-pub struct ClientLayer {
-  client: Arc<Mutex<DataClient<Channel>>>,
+pub struct DataServiceClient {
+  grpc: GrpcClient,
 }
 
-#[derive(Debug, Error)]
-pub enum ClientLayerError {
-  #[error("Invalid endpoint while trying to connect to the data services")]
-  InvalidEndpoint,
-  #[error("Failed to connect to one of the endpoints")]
-  FailedConnection,
-}
-
-impl ClientLayer {
+impl DataServiceClient {
   #[tracing::instrument]
-  pub fn connect(endpoints: &[&str]) -> StackResult<Self, ClientLayerError> {
-    let mut parsed_endpoints = Vec::new();
-    for endpoint in endpoints {
-      let uri = Uri::from_str(endpoint)
-        .change_context(ClientLayerError::InvalidEndpoint)
-        .attach_printable_lazy(|| format!("with endpoint: {endpoint}"))?;
+  pub fn connect(cfg: &GrpcConfig) -> Result<Self, GrpcClientInitError> {
+    GrpcClient::new(cfg).map(|grpc| Self { grpc })
+  }
 
-      let endpoint = Endpoint::new(uri)
-        .change_context(ClientLayerError::InvalidEndpoint)
-        .attach_printable_lazy(|| format!("with endpoint: {endpoint}"))?
-        .user_agent(concat!("Capwat-gRPC-Client/", env!("CARGO_PKG_VERSION")))
-        .expect("should parse default static header");
-
-      parsed_endpoints.push(endpoint);
-    }
-
-    let channel = Channel::balance_list(parsed_endpoints.into_iter());
-    let layer = Self { client: Arc::new(Mutex::new(DataClient::new(channel))) };
-
-    Ok(layer)
+  fn establish_grpc_client(&self) -> DataClient<Channel> {
+    DataClient::new(self.grpc.get_channel())
   }
 }
 
 #[async_trait]
-impl DataService for ClientLayer {
+impl drivers::Data for DataServiceClient {
   #[tracing::instrument]
   async fn find_user_by_id(
     &self,
-    id: Id<UserMarker>,
-  ) -> ServiceResult<Option<User>> {
-    let mut client = self.client.lock().await;
-    let response = client
-      .get_user_by_id(GetUserByIdRequest { id: id.get() })
+    id: Sensitive<Id<UserMarker>>,
+  ) -> KResult<Option<User>> {
+    let mut client = self.establish_grpc_client();
+    let resp = client
+      .find_user_by_id(GrpcRequest::new(proto::FindUserByIdRequest {
+        id: id.to_proto()?,
+      }))
       .await?
-      .into_inner()
-      .user;
+      .into_inner();
 
-    if let Some(response) = response {
-      let user = User {
-        id,
-        created_at: response.created_at.parse().into_capwat()?,
-        name: response.name,
-        email: response.email,
-        display_name: response.display_name,
-        password_hash: response.password_hash,
-        updated_at: if let Some(updated_at) = response.updated_at {
-          Some(updated_at.parse().into_capwat()?)
-        } else {
-          None
-        },
-      };
-      Ok(Some(user))
-    } else {
-      Ok(None)
-    }
+    resp.user.map(FromProto::from_proto).transpose()
   }
 
   #[tracing::instrument]
   async fn find_user_by_login(
     &self,
-    email_or_username: &str,
-  ) -> ServiceResult<Option<User>> {
-    let mut client = self.client.lock().await;
-    let response = client
-      .get_user_by_login(GetUserByLoginRequest {
-        email_or_username: email_or_username.to_string(),
-      })
+    email_or_username: Sensitive<&str>,
+  ) -> KResult<Option<User>> {
+    let mut client = self.establish_grpc_client();
+    let resp = client
+      .find_user_by_login(GrpcRequest::new(proto::FindUserByLoginRequest {
+        email_or_username: email_or_username.into_inner().to_string(),
+      }))
       .await?
-      .into_inner()
-      .user;
+      .into_inner();
 
-    if let Some(response) = response {
-      let user = User {
-        id: Id::new_checked(response.id)
-          .ok_or_else(|| Error::new(ErrorType::Internal))?,
-        created_at: response.created_at.parse().into_capwat()?,
-        name: response.name,
-        email: response.email,
-        display_name: response.display_name,
-        password_hash: response.password_hash,
-        updated_at: if let Some(updated_at) = response.updated_at {
-          Some(updated_at.parse().into_capwat()?)
-        } else {
-          None
-        },
-      };
-      Ok(Some(user))
-    } else {
-      Ok(None)
-    }
+    resp.user.map(FromProto::from_proto).transpose()
+  }
+
+  #[tracing::instrument]
+  async fn get_secret(&self) -> KResult<Secret> {
+    let mut client = self.establish_grpc_client();
+    let resp = client.get_secret(GrpcRequest::new(())).await?.into_inner();
+
+    Secret::from_proto(resp)
   }
 }

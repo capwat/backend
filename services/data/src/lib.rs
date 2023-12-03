@@ -1,9 +1,15 @@
-// This is used for the kernel's service prelude module
-#![allow(clippy::wildcard_imports)]
+use cfg_if::cfg_if;
 
-mod client;
-mod protobuf;
-mod server;
+cfg_if! {
+  if #[cfg(feature = "grpc")] {
+    mod client;
+    pub use client::DataServiceClient;
+  }
+}
 
-pub use client::ClientLayer;
-pub use server::ServerLayer;
+mod r#impl;
+
+pub mod config;
+pub mod db;
+
+pub use r#impl::{DataService, DataServiceInitError};

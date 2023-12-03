@@ -12,68 +12,82 @@ fn serialize_index_map<K: Serialize, V: Serialize, S: serde::Serializer>(
   map_ser.end()
 }
 
-pub struct MessageBuilder(Vec<Cow<'static, str>>);
+pub struct MessageBuilder(Option<Vec<Cow<'static, str>>>);
 
+// We're explicitly know that the inner type of it contains a value
+#[allow(clippy::unwrap_used)]
 impl MessageBuilder {
   #[must_use]
   pub const fn new() -> Self {
-    Self(Vec::new())
+    Self(Some(Vec::new()))
   }
 
-  pub fn insert(&mut self, message: impl Into<Cow<'static, str>>) {
-    self.0.push(message.into());
+  pub fn insert(&mut self, message: impl Into<Cow<'static, str>>) -> &mut Self {
+    self.0.as_mut().unwrap().push(message.into());
+    self
   }
 
   #[must_use]
-  pub fn build(self) -> ValidateError {
-    ValidateError::Messages(self.0)
+  pub fn build(&mut self) -> ValidateError {
+    ValidateError::Messages(self.0.take().unwrap())
   }
 }
 
-pub struct SliceBuilder(Vec<Option<ValidateError>>);
+pub struct SliceBuilder(Option<Vec<Option<ValidateError>>>);
 
+// We're explicitly know that the inner type of it contains a value
+#[allow(clippy::unwrap_used)]
 impl SliceBuilder {
   #[must_use]
   pub const fn new() -> Self {
-    Self(Vec::new())
+    Self(Some(Vec::new()))
   }
 
-  pub fn insert_empty(&mut self) {
-    self.0.push(None);
+  pub fn insert_empty(&mut self) -> &mut Self {
+    self.0.as_mut().unwrap().push(None);
+    self
   }
 
-  pub fn insert(&mut self, value: ValidateError) {
-    self.0.push(if value.is_empty() { None } else { Some(value) });
+  pub fn insert(&mut self, value: ValidateError) -> &mut Self {
+    self.0.as_mut().unwrap().push(if value.is_empty() {
+      None
+    } else {
+      Some(value)
+    });
+    self
   }
 
   #[must_use]
-  pub fn build(self) -> ValidateError {
-    ValidateError::Slice(self.0)
+  pub fn build(&mut self) -> ValidateError {
+    ValidateError::Slice(self.0.take().unwrap())
   }
 }
 
-pub struct FieldBuilder(IndexMap<Cow<'static, str>, ValidateError>);
+pub struct FieldBuilder(Option<IndexMap<Cow<'static, str>, ValidateError>>);
 
+// We're explicitly know that the inner type of it contains a value
 #[allow(clippy::new_without_default)]
+#[allow(clippy::unwrap_used)]
 impl FieldBuilder {
   #[must_use]
   pub fn new() -> Self {
-    Self(IndexMap::default())
+    Self(Some(IndexMap::default()))
   }
 
   pub fn insert(
     &mut self,
     key: impl Into<Cow<'static, str>>,
     value: ValidateError,
-  ) {
+  ) -> &mut Self {
     if !value.is_empty() {
-      self.0.insert(key.into(), value);
+      self.0.as_mut().unwrap().insert(key.into(), value);
     }
+    self
   }
 
   #[must_use]
-  pub fn build(self) -> ValidateError {
-    ValidateError::Fields(self.0)
+  pub fn build(&mut self) -> ValidateError {
+    ValidateError::Fields(self.0.take().unwrap())
   }
 }
 
@@ -121,20 +135,18 @@ impl ValidateError {
   pub fn slice_builder() -> SliceBuilder {
     SliceBuilder::new()
   }
+
+  #[must_use]
+  pub fn message(message: impl Into<Cow<'static, str>>) -> Self {
+    MessageBuilder::new().insert(message.into()).build()
+  }
 }
 
 impl ValidateError {
   #[must_use]
   pub fn is_empty(&self) -> bool {
     match self {
-      ValidateError::Slice(n) => {
-        for e in n {
-          if e.is_some() {
-            return false;
-          }
-        }
-        true
-      },
+      ValidateError::Slice(n) => n.iter().all(std::option::Option::is_none),
       ValidateError::Fields(n) => n.is_empty(),
       ValidateError::Messages(n) => n.is_empty(),
     }
@@ -149,7 +161,7 @@ impl ValidateError {
   }
 }
 
-use serde::{ser::SerializeMap, Serialize};
+use serde::{de::IgnoredAny, ser::SerializeMap, Serialize};
 
 impl<'de> serde::Deserialize<'de> for ValidateError {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -173,16 +185,18 @@ impl<'de> serde::Deserialize<'de> for ValidateError {
         let mut addr_data = None;
 
         while let Some(key) = map.next_key::<String>()? {
-          match key.as_str() {
-            "_errors" => {
-              if addr_data.is_some() {
-                return Err(serde::de::Error::duplicate_field("_errors"));
-              }
-              addr_data = Some(map.next_value::<Vec<Cow<'static, str>>>()?);
-            },
-            _ => {
-              fields.insert(Cow::Owned(key), map.next_value()?);
-            },
+          if key.as_str() == "_errors" {
+            if addr_data.is_some() {
+              return Err(serde::de::Error::duplicate_field("_errors"));
+            }
+            addr_data = Some(map.next_value::<Vec<Cow<'static, str>>>()?);
+            continue;
+          }
+
+          if addr_data.is_none() {
+            fields.insert(Cow::Owned(key), map.next_value()?);
+          } else {
+            map.next_value::<IgnoredAny>()?;
           }
         }
 
@@ -241,44 +255,50 @@ mod tests {
     age: u32,
   }
 
+  fn validate_names(names: &[&'static str]) -> Result<(), ValidateError> {
+    let mut slice = ValidateError::slice_builder();
+    for name in names {
+      let mut msg = ValidateError::msg_builder();
+      if name.is_empty() {
+        msg.insert("Name is empty");
+      }
+      slice.insert(msg.build());
+    }
+    slice.build().into_result()
+  }
+
+  fn validate_age(age: u32) -> Result<(), ValidateError> {
+    if age == 0 {
+      return Err(ValidateError::msg_builder().insert("Invalid age").build());
+    }
+    if age > 202 {
+      return Err(ValidateError::msg_builder().insert("Too old").build());
+    }
+    Ok(())
+  }
+
   impl Validate for Hello {
     fn validate(&self) -> Result<(), ValidateError> {
-      fn validate_names(names: &[&'static str]) -> Result<(), ValidateError> {
-        let mut slice = ValidateError::slice_builder();
-        for name in names {
-          let mut msg = ValidateError::msg_builder();
-          if name.is_empty() {
-            msg.insert("Name is empty");
-          }
-          slice.insert(msg.build());
-        }
-        slice.build().into_result()
-      }
-
       let mut fields = ValidateError::field_builder();
       if let Err(e) = validate_names(&self.names) {
         fields.insert("name", e);
       }
-      {
-        let mut msg = ValidateError::msg_builder();
-        if self.age == 0 {
-          msg.insert("invalid age");
-        }
-        if self.age > 202 {
-          msg.insert("too old");
-        }
-        fields.insert("age", msg.build());
+
+      if let Err(e) = validate_age(self.age) {
+        fields.insert("age", e);
       }
+
       fields.build().into_result()
     }
   }
 
   #[test]
   fn test_debug_fmt() {
-    const EXPECTED_FMT_MSG: &str = r#"{"name": [None, Some({"_errors": ["Name is empty"]}), None], "age": {"_errors": ["invalid age"]}}"#;
+    const EXPECTED_FMT_MSG: &str = r#"{"name": [None, Some({"_errors": ["Name is empty"]}), None], "age": {"_errors": ["Invalid age"]}}"#;
 
     let error =
       Hello { names: vec!["Mike", "", "John"], age: 0 }.validate().unwrap_err();
+
     assert_eq!(EXPECTED_FMT_MSG, format!("{error:?}"));
   }
 
@@ -286,6 +306,7 @@ mod tests {
   fn test_serde_impl() {
     let error =
       Hello { names: vec!["Mike", "", "John"], age: 0 }.validate().unwrap_err();
+
     serde_test::assert_tokens(
       &error,
       &[
@@ -306,7 +327,7 @@ mod tests {
         Token::Map { len: Some(1) },
         Token::Str("_errors"),
         Token::Seq { len: Some(1) },
-        Token::Str("invalid age"),
+        Token::Str("Invalid age"),
         Token::SeqEnd,
         Token::MapEnd,
         Token::MapEnd,
