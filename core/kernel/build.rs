@@ -2,14 +2,21 @@
 #[cfg(not(feature = "grpc"))]
 fn main() {}
 
+macro_rules! proto_dir {
+  ($($entry:tt)*) => {
+    concat!("../../proto" $(, $entry)*)
+  };
+}
+
 #[cfg(feature = "grpc")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   tonic_build::configure().compile(
-    &["../../proto/data.proto", "../../proto/schema.proto"],
-    &["../../proto"],
+    &[proto_dir!("/data.proto"), proto_dir!("/schema.proto")],
+    &[proto_dir!()],
   )?;
 
-  println!("cargo:rerun-if-changed=../../proto/data.proto");
-  println!("cargo:rerun-if-changed=../../proto/schema.proto");
+  println!(concat!("cargo:rerun-if-changed=", proto_dir!("/data.proto")));
+  println!(concat!("cargo:rerun-if-changed=", proto_dir!("/schema.proto")));
+
   Ok(())
 }
