@@ -1,0 +1,24 @@
+[package]
+name = "users"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[features]
+tls-accept-any-certs = ["database/tls-accept-any-certs"]
+tls-accept-native-certs = ["database/tls-accept-native-certs"]
+
+[dependencies]
+async-trait.workspace = true
+capwat-kernel = { workspace = true, features = ["with-diesel"] }
+
+database = { path = "../database" }
+diesel.workspace = true
+
+tokio.workspace = true
+
+[lints]
+workspace = true

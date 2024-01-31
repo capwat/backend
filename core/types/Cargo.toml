@@ -1,0 +1,29 @@
+[package]
+name = "capwat-types"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[features]
+server = ["diesel"]
+
+[dependencies]
+chrono.workspace = true
+either.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+capwat-types-derive = { path = "derive" }
+
+diesel = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_test.workspace = true
+static_assertions.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,19 @@
+[package]
+name = "capwat-types-derive"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn.workspace = true
+
+capwat-types-derive-lib = { path = "../derive-lib" }
+
+[lints]
+workspace = true

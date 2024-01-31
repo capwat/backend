@@ -1,0 +1,17 @@
+# Build and deploy files
+target/
+docker-compose.yml
+
+# Lock and dump files
+Cargo.lock
+.DS_Store
+
+# Database dump
+*.sqlite
+*.sqlite3
+
+*.db
+*.rdb
+
+# Environment and secrets
+.env

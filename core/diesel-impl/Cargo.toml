@@ -1,0 +1,42 @@
+[package]
+name = "capwat-diesel"
+description = "Capwat's in-house composable database implementation with Diesel with TLS support"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["tls-accept-any-certs"]
+
+tls-accept-any-certs = []
+tls-accept-native-certs = ["rustls-native-certs"]
+
+[dependencies]
+capwat-kernel = { workspace = true, features = ["with-diesel"] }
+
+async-trait.workspace = true
+cfg-if.workspace = true
+chrono.workspace = true
+futures.workspace = true
+serde.workspace = true
+once_cell.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+url.workspace = true
+
+# the diesel-async crate in crates.io is outdated
+diesel-async = { git = "https://github.com/memothelemo/diesel_async", rev = "01deb6221b", version = "0.4.1", features = ["postgres", "tokio", "deadpool"] }
+deadpool = { version = "0.10", default-features = false, features = ["rt_tokio_1", "async-trait", "managed"] }
+diesel.workspace = true
+
+rustls = { version = "0.22.2" }
+rustls-native-certs = { version = "0.7.0", optional = true }
+tokio-postgres-rustls = "0.11.1"
+tokio-postgres = "0.7.10"
+
+[lints]
+workspace = true

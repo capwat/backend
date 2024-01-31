@@ -1,0 +1,29 @@
+[package]
+name = "capwat-kernel"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[features]
+with-diesel = ["diesel", "capwat-types/diesel"]
+
+[dependencies]
+capwat-types = { workspace = true, features = ["server"] }
+
+async-trait.workspace = true
+error-stack.workspace = true
+dotenvy.workspace = true
+pin-project-lite = "0.2.13"
+serde.workspace = true
+serde_test.workspace = true
+static_assertions.workspace = true
+thiserror.workspace = true
+tracing-error.workspace = true
+
+diesel = { workspace = true, optional = true }
+
+[lints]
+workspace = true

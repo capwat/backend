@@ -1,0 +1,25 @@
+[package]
+name = "database"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[features]
+tls-accept-any-certs = ["capwat-diesel/tls-accept-any-certs"]
+tls-accept-native-certs = ["capwat-diesel/tls-accept-native-certs"]
+
+[dependencies]
+capwat-diesel.workspace = true
+capwat-kernel = { workspace = true, features = ["with-diesel"] }
+
+chrono.workspace = true
+diesel.workspace = true
+diesel_migrations = { version = "2.1.0", features = ["postgres"] }
+serde.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
