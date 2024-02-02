@@ -83,6 +83,20 @@ impl<'a> DerefMut for Transaction<'a> {
     }
 }
 
+async fn try_rollback<T>(mut conn: T)
+where
+    T: std::ops::DerefMut<Target = internal::PgConnection>,
+{
+    if let Err(error) =
+        AnsiTransactionManager::rollback_transaction(conn.deref_mut())
+            .await
+            .into_error()
+            .change_context(RollbackFailed)
+    {
+        tracing::error!(?error, "Failed to rollback transaction");
+    }
+}
+
 // This method does not guarantee that a connection can be successfully
 // rollback the transaction! :)
 impl<'a> Drop for Transaction<'a> {
@@ -96,35 +110,14 @@ impl<'a> Drop for Transaction<'a> {
         let Some(conn) = self.connection.take() else { return };
 
         // Pooled connection will go after
-        let conn = match conn {
-            Connection::Pool(n) => n,
+        match conn {
+            Connection::Pool(n) => {
+                tokio::spawn(try_rollback(n));
+            },
             Connection::Test(mut conn) => {
                 // It's just testing environment.
-                futures::executor::block_on(async move {
-                    if let Err(error) =
-                        AnsiTransactionManager::rollback_transaction(&mut *conn)
-                            .await
-                            .into_error()
-                            .change_context(CommitFailed)
-                    {
-                        tracing::error!(
-                            ?error,
-                            "Failed to rollback transaction"
-                        );
-                    }
-                });
-                return;
+                futures::executor::block_on(try_rollback(&mut *conn));
             },
-        };
-
-        // WTF? HOW?
-        tokio::spawn(async move {
-            let mut conn = conn;
-            if let Err(err) =
-                AnsiTransactionManager::rollback_transaction(&mut *conn).await
-            {
-                tracing::error!(?err, "Failed to rollback transaction");
-            }
-        });
+        }
     }
 }

@@ -1,14 +1,12 @@
-#[cfg(feature = "diesel")]
-mod diesel;
 mod marker;
-pub use marker::*;
 
+use crate::Timestamp;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
-use crate::Timestamp;
+pub use marker::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id<T: Marker> {

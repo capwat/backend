@@ -15,7 +15,7 @@ tls-accept-any-certs = []
 tls-accept-native-certs = ["rustls-native-certs"]
 
 [dependencies]
-capwat-kernel = { workspace = true, features = ["with-diesel"] }
+capwat-kernel = { workspace = true, features = ["diesel"] }
 
 async-trait.workspace = true
 cfg-if.workspace = true
@@ -30,9 +30,8 @@ url.workspace = true
 
 # the diesel-async crate in crates.io is outdated
 diesel-async = { git = "https://github.com/memothelemo/diesel_async", rev = "01deb6221b", version = "0.4.1", features = ["postgres", "tokio", "deadpool"] }
-deadpool = { version = "0.10", default-features = false, features = ["rt_tokio_1", "async-trait", "managed"] }
 diesel.workspace = true
-
+deadpool = { version = "0.10", default-features = false, features = ["rt_tokio_1", "async-trait", "managed"] }
 rustls = { version = "0.22.2" }
 rustls-native-certs = { version = "0.7.0", optional = true }
 tokio-postgres-rustls = "0.11.1"

@@ -14,7 +14,6 @@ use tokio::sync::Mutex;
 use url::Url;
 
 use self::schema::ConnectPoolInfo;
-use crate::internal::AsyncConnectionWrapper;
 
 mod schema;
 
@@ -31,24 +30,18 @@ impl TestPool {
         let info = Self::setup_db(base_url.as_ref()).await;
         base_url.set_path(&info.db_name);
 
-        Self::run_migrations(base_url.as_str(), migrations).await;
+        super::Pool::run_migrations(
+            base_url.as_str().to_string().into(),
+            *DB_USE_TLS,
+            migrations,
+        )
+        .await
+        .unwrap();
 
         let conn =
             Arc::new(Mutex::new(Self::establish(base_url.as_ref()).await));
 
         Self { info: Some(Arc::new(info)), inner: Some(conn) }
-    }
-
-    async fn run_migrations(
-        url: &str,
-        migrations: Vec<Box<dyn Migration<Pg>>>,
-    ) {
-        let conn = Self::establish(url).await;
-
-        let mut conn = AsyncConnectionWrapper::from(conn);
-        for migration in migrations {
-            migration.run(&mut conn).expect("Failed to run migration");
-        }
     }
 
     async fn setup_db(url: &str) -> schema::ConnectPoolInfo {

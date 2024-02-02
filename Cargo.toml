@@ -1,5 +1,5 @@
 [workspace]
-members = ["core/*", "main/*"]
+members = ["core/*"]
 resolver = "2"
 
 [workspace.package]
@@ -36,6 +36,7 @@ url = "2.5.0"
 
 # we have no choice :)
 diesel = { version = "2.1.4", features = ["chrono", "postgres"] }
+diesel_derives = { version = "2.1.2", features = ["postgres"] }
 
 proc-macro2 = "1.0.78"
 quote = "1.0.35"

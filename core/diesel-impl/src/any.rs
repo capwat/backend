@@ -34,20 +34,19 @@ impl AnyPool for test::TestPool {
 
         // TODO: Check if it is safe to cancel this query by canceling the query future.
         if let Some(timeout) = timeout {
-            let result = tokio::time::timeout(
-                timeout,
-                diesel::sql_query("SELECT 1;").execute(&mut conn),
-            )
-            .await;
+            let query = diesel::sql_query("SELECT 1;").execute(&mut conn);
+            let result = tokio::time::timeout(timeout, query).await;
+            let success = if let Ok(result) = result {
+                result?;
+                true
+            } else {
+                false
+            };
 
-            match result {
-                Ok(Err(err)) => Err(err.into_error()),
-                Ok(..) => Ok(true),
-                Err(..) => Ok(false),
-            }
-        } else {
-            Ok(true)
+            return Ok(success);
         }
+
+        Ok(true)
     }
 
     fn connections(&self) -> usize {

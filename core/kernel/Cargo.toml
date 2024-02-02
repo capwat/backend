@@ -7,9 +7,6 @@ repository.workspace = true
 version.workspace = true
 rust-version.workspace = true
 
-[features]
-with-diesel = ["diesel", "capwat-types/diesel"]
-
 [dependencies]
 capwat-types = { workspace = true, features = ["server"] }
 
@@ -23,6 +20,8 @@ static_assertions.workspace = true
 thiserror.workspace = true
 tracing-error.workspace = true
 
+# capwat source is actually designed to be independent from
+# any platform/dependency/software lock-in but we have no choice.
 diesel = { workspace = true, optional = true }
 
 [lints]

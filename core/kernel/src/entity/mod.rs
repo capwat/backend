@@ -1,7 +1,7 @@
+use self::id::{Id, UserMarker};
+
 pub use capwat_types::id;
 pub use capwat_types::Timestamp;
-
-use self::id::{Id, UserMarker};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
