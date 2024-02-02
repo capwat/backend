@@ -1,14 +1,15 @@
 use async_trait::async_trait;
-use capwat_types::{
+use capwat_types_common::{
     id::{Id, UserMarker},
     Sensitive,
 };
+use std::fmt::Debug;
 
 use crate::entity::User;
 use crate::Result;
 
 #[async_trait]
-pub trait Service: Send + Sync {
+pub trait Service: Debug + Send + Sync {
     async fn create(&self, input: CreateUser<'_>) -> Result<User>;
     async fn find_by_id(&self, id: Id<UserMarker>) -> Result<Option<User>>;
     async fn find_by_name(&self, name: &str) -> Result<Option<User>>;

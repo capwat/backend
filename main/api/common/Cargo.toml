@@ -1,0 +1,14 @@
+[package]
+name = "api-common"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+capwat-kernel = { workspace = true, features = ["main-full"] }
+
+[lints]
+workspace = true

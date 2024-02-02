@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use capwat_types::Sensitive;
+use capwat_types_common::Sensitive;
+use std::fmt::Debug;
 
 use crate::Result;
 
@@ -11,7 +12,7 @@ use crate::Result;
 /// on the object you're going to pass on to avoid any possible security
 /// and data breaches.**
 #[async_trait]
-pub trait Manager: Send + Sync {
+pub trait Manager: Debug + Send + Sync {
     /// Gets the JWT secret key, used to verify users' JWT tokens.
     async fn jwt_key(&self) -> Result<Sensitive<String>>;
 }

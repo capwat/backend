@@ -1,4 +1,5 @@
-use capwat_types::Sensitive;
+#[cfg(feature = "full")]
+use capwat_types_common::Sensitive;
 
 /// This type tells whether the value is automatically generated
 /// from a generator or manually set (from deserialization or declaration).
@@ -63,6 +64,7 @@ impl<T> MaybeGenerated<T> {
     }
 }
 
+#[cfg(feature = "full")]
 impl<T> AsRef<T> for MaybeGenerated<Sensitive<T>> {
     fn as_ref(&self) -> &T {
         self.value().as_ref()

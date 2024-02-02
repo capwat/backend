@@ -1,3 +1,5 @@
+#[cfg(feature = "main-full")]
+mod diesel;
 mod marker;
 
 use crate::Timestamp;

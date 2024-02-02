@@ -1,15 +1,14 @@
 pub(crate) mod internal;
 
 pub mod error;
-pub mod form;
 pub mod id;
 pub mod timestamp;
 
 pub use timestamp::Timestamp;
 
-#[cfg(feature = "server")]
+#[cfg(feature = "full")]
 mod sensitive;
-#[cfg(feature = "server")]
+#[cfg(feature = "full")]
 pub use sensitive::Sensitive;
 
 /// Keeps the raw sensitive data in memory but it cannot be
@@ -17,5 +16,5 @@ pub use sensitive::Sensitive;
 ///
 /// If `server` feature is disabled, this type is that directly
 /// referred to the generic argument.
-#[cfg(not(feature = "server"))]
+#[cfg(not(feature = "full"))]
 pub type Sensitive<T> = T;

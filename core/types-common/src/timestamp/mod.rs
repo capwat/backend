@@ -6,6 +6,9 @@ use std::ops::Deref;
 use std::str::FromStr;
 use thiserror::Error;
 
+#[cfg(feature = "main-full")]
+mod diesel;
+
 // Capwat epoch starts at November 18, 2023 at 07:52:48 AM in Manila time
 const EPOCH: u64 = 1_700_265_168_293;
 const TIMESTAMP_BITS_LEN: usize = 43; // It should last up to 278 years

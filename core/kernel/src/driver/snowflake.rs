@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use capwat_types::id::{AnyMarker, Id};
+use capwat_types_common::id::{AnyMarker, Id};
 use std::fmt::Debug;
 
 use crate::Result;

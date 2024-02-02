@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use capwat_kernel::error::ext::{ErrorExt, IntoError, ResultExt};
+use capwat_kernel::error::ext::{ErrorExt, ResultExt};
 use capwat_kernel::error::Result;
 use diesel_async::RunQueryDsl;
 use std::time::Duration;

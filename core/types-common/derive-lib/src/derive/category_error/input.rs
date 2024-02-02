@@ -17,6 +17,7 @@ impl GlobalAttrParse for Attr {
         let mut message = AttributeValue::new(ctx, "message");
         let mut manual_deserialize =
             AttributeValue::new(ctx, "manual_deserialize");
+
         let mut manual_serialize = AttributeValue::new(ctx, "manual_serialize");
         let subcode = AttributeValue::new(ctx, "subcode");
 

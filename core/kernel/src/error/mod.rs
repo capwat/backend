@@ -2,9 +2,10 @@ use error_stack::{Context, Report};
 use tracing_error::SpanTrace;
 
 pub mod ext;
+#[cfg(feature = "main-full")]
 mod ext_impl;
 
-pub use capwat_types::error::Error as Category;
+pub use capwat_types_common::error::Error as Category;
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct Error {

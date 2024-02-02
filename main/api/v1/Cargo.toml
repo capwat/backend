@@ -1,0 +1,18 @@
+[package]
+name = "api-v1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+capwat-kernel = { workspace = true, features = ["main-full"] }
+capwat-types-v1 = { workspace = true, features = ["main-full"] }
+
+actix-web.workspace = true
+api-common = { path = "../common" }
+
+[lints]
+workspace = true

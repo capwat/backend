@@ -25,7 +25,7 @@ pub struct TestPool {
 
 impl TestPool {
     #[tracing::instrument(skip(migrations))]
-    pub async fn connect(migrations: Vec<Box<dyn Migration<Pg>>>) -> Self {
+    pub async fn connect(migrations: &[Box<dyn Migration<Pg>>]) -> Self {
         let mut base_url = Self::into_base_url(&DB_URL);
         let info = Self::setup_db(base_url.as_ref()).await;
         base_url.set_path(&info.db_name);

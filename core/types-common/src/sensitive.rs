@@ -115,6 +115,12 @@ impl AsRef<[u8]> for Sensitive<Vec<u8>> {
     }
 }
 
+impl<'a> From<&'a str> for Sensitive<String> {
+    fn from(value: &'a str) -> Self {
+        Self(value.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Sensitive;

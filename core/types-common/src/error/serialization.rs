@@ -43,3 +43,13 @@ impl Serialize for Error {
         map.end()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn internal_variant_should_not_panic() {
+        serde_json::to_string(&Error::Internal).unwrap();
+    }
+}

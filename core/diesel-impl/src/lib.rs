@@ -39,7 +39,7 @@ impl Pool {
         cfg: &PoolConfig,
         enforce_tls: bool,
         timeout: Duration,
-        migrations: Vec<Box<dyn Migration<Pg>>>,
+        migrations: &[Box<dyn Migration<Pg>>],
     ) -> Result<Self> {
         Self::run_migrations(cfg.url.clone(), enforce_tls, migrations).await?;
 
@@ -68,7 +68,7 @@ impl Pool {
 
     #[tracing::instrument(skip_all)]
     pub async fn connect_for_tests(
-        migrations: Vec<Box<dyn Migration<Pg>>>,
+        migrations: &[Box<dyn Migration<Pg>>],
     ) -> Self {
         let pool = test::TestPool::connect(migrations).await;
         pool.wait_until_healthy(None)
@@ -85,10 +85,10 @@ impl Pool {
     // To make it to async friendly (simply require Send in Migration trait),
     // all diesel packages need to depend with our modified version of diesel.
     #[tracing::instrument(skip_all)]
-    pub async fn run_migrations(
+    async fn run_migrations(
         url: Sensitive<String>,
         enforce_tls: bool,
-        migrations: Vec<Box<dyn Migration<Pg>>>,
+        migrations: &[Box<dyn Migration<Pg>>],
     ) -> Result<()> {
         // Safely run migrations from there
         let conn = if enforce_tls {

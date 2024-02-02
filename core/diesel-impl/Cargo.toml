@@ -15,7 +15,7 @@ tls-accept-any-certs = []
 tls-accept-native-certs = ["rustls-native-certs"]
 
 [dependencies]
-capwat-kernel = { workspace = true, features = ["diesel"] }
+capwat-kernel = { workspace = true, features = ["main-full"] }
 
 async-trait.workspace = true
 cfg-if.workspace = true

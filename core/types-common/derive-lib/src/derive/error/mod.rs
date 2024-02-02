@@ -404,6 +404,74 @@ fn expand_serde_de_visitor<'a>(input: &hir::Input<'a>) -> TokenStream {
     }
 }
 
+// pub enum ErrorCode {
+//     Hello,
+//     Internal,
+// }
+fn generate_code_kinds<'a>(input: &hir::Input<'a>) -> TokenStream {
+    let mut variants = TokenStream::new();
+    let mut other_body = TokenStream::new();
+    let mut to_code_body = TokenStream::new();
+    let mut from_code_matches = TokenStream::new();
+
+    let name = &input.original.ident;
+    let (impl_generics, ty_generics, where_clause) =
+        input.original.generics.split_for_impl();
+
+    let kind_name = format!("{}Code", input.original.ident);
+    let kind_name = syn::Ident::new(&kind_name, Span::call_site());
+
+    for variant in input.variants.iter() {
+        let hir::VariantType::Category { code, .. } = &variant.r#type else {
+            continue;
+        };
+
+        let variant_name = &variant.original.ident;
+        generate_left_hand_side_pat(variant, &mut other_body, false);
+
+        variants.extend(quote!(#variant_name,));
+        other_body.extend(quote!(#kind_name::#variant_name,));
+        to_code_body.extend(quote!(Self::#variant_name => #code,));
+        from_code_matches.extend(quote!(#code => Self::#variant_name,));
+    }
+
+    quote! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        pub enum #kind_name {
+            #variants
+            Unknown(u64),
+        }
+
+        impl #kind_name {
+            #[must_use]
+            pub const fn from_code(code: u64) -> Self {
+                match code {
+                    #from_code_matches
+                    _ => Self::Unknown(code),
+                }
+            }
+
+            #[must_use]
+            pub const fn code(&self) -> u64 {
+                match self {
+                    #to_code_body
+                    Self::Unknown(n) => *n,
+                }
+            }
+        }
+
+        impl #impl_generics #name #ty_generics #where_clause {
+            #[must_use]
+            pub const fn code_kind(&self) -> #kind_name {
+                match self {
+                    #other_body
+                    #name::Unknown(data) => #kind_name::Unknown(data.code),
+                }
+            }
+        }
+    }
+}
+
 // impl Error {
 //      fn _make_message(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 //          use std::fmt::Display;
@@ -447,6 +515,7 @@ fn expand_input<'a>(input: &hir::Input<'a>) -> TokenStream {
     let value_fns = expand_value_fns(input);
     let code_consts = expand_const_codes(input);
     let visitor = expand_serde_de_visitor(input);
+    let kinds = generate_code_kinds(input);
 
     let name = &input.original.ident;
     let (impl_generics, ty_generics, where_clause) =
@@ -467,5 +536,6 @@ fn expand_input<'a>(input: &hir::Input<'a>) -> TokenStream {
         }
 
         #visitor
+        #kinds
     }
 }

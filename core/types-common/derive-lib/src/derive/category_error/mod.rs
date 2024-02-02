@@ -145,6 +145,72 @@ fn expand_category_message_impl<'a>(input: &hir::Input<'a>) -> TokenStream {
     }
 }
 
+// pub enum ErrorCode {
+//     Hello,
+//     Internal,
+// }
+fn generate_code_kinds<'a>(input: &hir::Input<'a>) -> TokenStream {
+    let Some(variants) = input.variants.as_ref() else { unreachable!() };
+
+    let mut variants_body = TokenStream::new();
+    let mut matches = TokenStream::new();
+    let mut subcode_kind_body = TokenStream::new();
+    let mut to_code_body = TokenStream::new();
+
+    let name = &input.original.ident;
+    let (impl_generics, ty_generics, where_clause) =
+        input.original.generics.split_for_impl();
+
+    let kind_name = format!("{}Code", input.original.ident);
+    let kind_name = syn::Ident::new(&kind_name, Span::call_site());
+
+    for variant in variants {
+        let variant_name = &variant.original.ident;
+        let subcode = variant.subcode;
+        variants_body.extend(quote!(#variant_name,));
+        matches.extend(quote!(#subcode => Self::#variant_name,));
+
+        generate_left_hand_side_pat(variant, &mut subcode_kind_body, true);
+        subcode_kind_body.extend(quote!(#kind_name::#variant_name,));
+        to_code_body.extend(quote!(Self::#variant_name => #subcode,));
+    }
+
+    quote! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        pub enum #kind_name {
+            #variants_body
+            Unknown(u64),
+        }
+
+        impl #kind_name {
+            #[must_use]
+            pub const fn from_subcode(code: u64) -> Self {
+                match code {
+                    #matches
+                    _ => Self::Unknown(code),
+                }
+            }
+
+            #[must_use]
+            pub const fn code(&self) -> u64 {
+                match self {
+                    #to_code_body
+                    Self::Unknown(n) => *n,
+                }
+            }
+        }
+
+        impl #impl_generics #name #ty_generics #where_clause {
+            #[must_use]
+            pub const fn subcode_kind(&self) -> #kind_name {
+                match self {
+                    #subcode_kind_body
+                }
+            }
+        }
+    }
+}
+
 fn expand_deserialize_category_impl<'a>(input: &hir::Input<'a>) -> TokenStream {
     let Some(variants) = input.variants.as_ref() else { unreachable!() };
 
@@ -247,7 +313,6 @@ fn expand_serialize_category_impl<'a>(input: &hir::Input<'a>) -> TokenStream {
 
 fn expand_input<'a>(input: &hir::Input<'a>) -> TokenStream {
     let category_impl = expand_category_impl(input);
-
     let name = &input.original.ident;
     let (impl_generics, ty_generics, where_clause) =
         input.original.generics.split_for_impl();
@@ -266,6 +331,7 @@ fn expand_input<'a>(input: &hir::Input<'a>) -> TokenStream {
     // Auto-generated constant codes
     if is_enum {
         tokens.extend(expand_const_codes(input));
+        tokens.extend(generate_code_kinds(input));
     }
 
     if is_enum && !manually_deserialize {
