@@ -1,0 +1,6 @@
+/target
+/private
+/logs
+.env
+
+**/capwat.toml

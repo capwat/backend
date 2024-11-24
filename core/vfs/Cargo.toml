@@ -1,0 +1,30 @@
+[package]
+name = "capwat-vfs"
+description = "memothelemo's implementation of virtual file system"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bitflags.workspace = true
+dashmap.workspace = true
+thiserror.workspace = true
+
+filetime = "0.2.23"
+fs-err = "3.0.0"
+parking_lot = { version = "0.12.3", features = ["arc_lock"] }
+
+[target.'cfg(windows)'.dependencies]
+path-slash = "0.2.1"
+unix_path = "1.0.1"
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.52.0"
+features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+]
+
+[dev-dependencies]
+static_assertions.workspace = true

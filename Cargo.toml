@@ -1,0 +1,78 @@
+[package]
+name = "capwat"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+capwat-server.workspace = true
+
+capwat-config.workspace = true
+capwat-error.workspace = true
+capwat-macros.workspace = true
+capwat-tracing.workspace = true
+capwat-utils.workspace = true
+capwat-vfs.workspace = true
+
+clap.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
+
+[workspace]
+members = ["api/*", "core/*", "xtask"]
+resolver = "2"
+
+[workspace.package]
+authors = ["memothelemo"]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82.0"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(release)'] }
+
+[workspace.dependencies]
+# core dependencies
+capwat-api-types    = { path = "api/types", features = ["server"] }
+capwat-server       = { path = "api/server" }
+
+capwat-config       = { path = "core/config" }
+capwat-error        = { path = "core/error" }
+capwat-macros       = { path = "core/macros" }
+capwat-model        = { path = "core/model" }
+capwat-tracing      = { path = "core/tracing" }
+capwat-utils        = { path = "core/utils" }
+capwat-vfs          = { path = "core/vfs" }
+
+# diagnostics
+error-stack         = { git = "https://github.com/memothelemo/error-stack", rev = "01b348a", features = ["spantrace", "serde"] }
+tracing             = "0.1.40"
+tracing-subscriber  = { version = "*", features = ["chrono", "env-filter"] }
+
+# core crates
+clap    = { version = "4.5.21", features = ["derive"] }
+tokio   = { version = "1.41.1", features = ["full"] }
+
+# useful macros and crates
+async-trait         = "0.1.83"
+bon                 = "3.0.1"
+dashmap             = "6.1.0"
+paste               = "1.0.15"
+static_assertions   = "1.1.0"
+strum               = { version = "0.26.3", features = ["derive"] }
+thiserror           = "2.0.0"
+zeroize             = "1.8.1"
+
+# types
+bitflags    = { version = "2.6.0" }
+chrono      = { version = "0.4.38", features = ["serde"] }
+
+# serialization
+serde       = { version = "1.0.214", features = ["derive"] }
+serde_with  = "3.9.0"
+serde_json  = "1.0.132"

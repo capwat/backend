@@ -1,0 +1,19 @@
+[package]
+name = "capwat-api-types"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+server = []
+
+[dependencies]
+paste.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+
+[dev-dependencies]
+serde_test = "1.0.177"
+static_assertions.workspace = true
