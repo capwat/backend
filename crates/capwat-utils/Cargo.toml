@@ -1,0 +1,28 @@
+[package]
+name = "capwat-utils"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+capwat-api-types    = { workspace = true, features = ["server"] }
+capwat-error        = { workspace = true }
+capwat-vfs          = { workspace = true }
+
+dotenvy = "0.15.7"
+fundu = { version = "2.0.0", features = ["chrono"] }
+moka = { version = "0.12.8", features = ["future"] }
+
+chrono.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+zeroize.workspace = true
+
+[dev-dependencies]
+static_assertions.workspace = true
+
+[lints]
+workspace = true

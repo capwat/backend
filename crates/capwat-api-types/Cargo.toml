@@ -1,0 +1,26 @@
+[package]
+name = "capwat-api-types"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+server = ["axum", "bon"]
+
+[dependencies]
+capwat-macros.workspace = true
+either = { version = "1.13.0", features = ["serde"] }
+paste.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+
+# this is intentional as we might use this for testing
+axum = { workspace = true, optional = true }
+bon = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_test = "1.0.177"
+static_assertions.workspace = true

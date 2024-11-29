@@ -1,5 +1,5 @@
 [workspace]
-members = []
+members = ["crates/*", "drivers/*", "src/*"]
 resolver = "2"
 
 [workspace.package]
@@ -13,29 +13,46 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(release)'] }
 
 [workspace.dependencies]
 # core dependencies
+capwat-api-types    = { path = "crates/capwat-api-types" }
+capwat-config       = { path = "crates/capwat-config" }
+capwat-error        = { path = "crates/capwat-error" }
+capwat-macros       = { path = "crates/capwat-macros" }
+capwat-model        = { path = "crates/capwat-model" }
+capwat-tracing      = { path = "crates/capwat-tracing" }
+capwat-utils        = { path = "crates/capwat-utils" }
+capwat-vfs          = { path = "crates/capwat-vfs" }
+
+capwat-postgres     = { path = "drivers/capwat-postgres" }
 
 # diagnostics
 error-stack         = { git = "https://github.com/memothelemo/error-stack", rev = "01b348a", features = ["spantrace", "serde"] }
 tracing             = "0.1.40"
-tracing-subscriber  = { version = "*", features = ["chrono", "env-filter"] }
+tracing-subscriber  = { version = "0.3.18", features = ["chrono", "env-filter"] }
 
 # core crates
-clap    = { version = "4.5.21", features = ["derive"] }
-tokio   = { version = "1.41.1", features = ["full"] }
+axum            = { version = "0.7.7", features = ["macros"] }
+clap            = { version = "4.5.21", features = ["derive"] }
+diesel          = { version = "2.2.5", features = ["chrono"] }
+diesel-async    = { version = "0.5.1", features = ["postgres", "bb8"] }
+futures         = "0.3.31"
+rustls          = "0.23.18"
+tokio           = { version = "1.41.1", features = ["full"] }
 
 # useful macros and crates
-async-trait         = "0.1.83"
-bon                 = "3.0.1"
-dashmap             = "6.1.0"
-paste               = "1.0.15"
-static_assertions   = "1.1.0"
-strum               = { version = "0.26.3", features = ["derive"] }
-thiserror           = "2.0.0"
-zeroize             = "1.8.1"
+argon2            = "0.5.3"
+async-trait       = "0.1.83"
+bon               = "3.0.1"
+dashmap           = "6.1.0"
+paste             = "1.0.15"
+static_assertions = "1.1.0"
+strum             = { version = "0.26.3", features = ["derive"] }
+thiserror         = "2.0.0"
+zeroize           = "1.8.1"
 
 # types
 bitflags    = { version = "2.6.0" }
 chrono      = { version = "0.4.38", features = ["serde"] }
+uuid        = { version = "1.11.0", features = ["v7"] }
 
 # serialization
 serde       = { version = "1.0.214", features = ["derive"] }

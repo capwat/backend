@@ -1,0 +1,37 @@
+[package]
+name = "capwat-postgres"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+capwat-config.workspace = true
+capwat-error.workspace = true
+capwat-model = { workspace = true, features = ["with_diesel"] }
+capwat-utils.workspace = true
+
+async-trait.workspace = true
+chrono.workspace = true
+diesel.workspace = true
+diesel-async.workspace = true
+futures.workspace = true
+rustls.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+bb8 = "0.8.6"
+diesel_async_migrations = "0.15.0"
+rustls-native-certs = "0.8.1"
+tokio-postgres-rustls = "0.13.0"
+tokio-postgres = "0.7.12"
+url = "2.5.3"
+
+[dev-dependencies]
+capwat-macros.workspace = true
+capwat-tracing.workspace = true
+capwat-vfs.workspace = true
+
+[lints]
+workspace = true
