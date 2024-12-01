@@ -1,4 +1,4 @@
-use capwat_crypto::client::generate_mock_user_keys;
+use capwat_crypto::client::generate_mock_user_info;
 use capwat_error::{ext::ResultExt, Result};
 use capwat_model::instance_settings::InstanceSettings;
 use capwat_postgres::queries::instance_settings::InstanceSettingsPgImpl;
@@ -28,7 +28,7 @@ async fn setup_instance(app: App) -> Result<()> {
 }
 
 async fn stuff(config: capwat_config::Server, vfs: Vfs) -> Result<()> {
-    let data = generate_mock_user_keys("memothelemo");
+    let data = generate_mock_user_info("memothelemo");
     println!("{data:#?}");
 
     let app = App::new(config, vfs);

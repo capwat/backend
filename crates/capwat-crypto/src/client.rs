@@ -1,5 +1,8 @@
 use base64::{prelude::BASE64_URL_SAFE, Engine};
-use capwat_api_types::users::UserSalt;
+use capwat_api_types::{
+    e2ee::{ClassicKey, PostQuantumKey},
+    users::UserSalt,
+};
 use sha2::{Digest, Sha256};
 
 use crate::{aead, curve25519, ml_kem768};
@@ -8,8 +11,8 @@ use crate::{aead, curve25519, ml_kem768};
 pub struct GenerateUserMockData {
     pub salt: UserSalt,
     pub access_key_hash: String,
-    pub classic_pk: String,
-    pub pqc_pk: String,
+    pub classic_pk: ClassicKey,
+    pub pqc_pk: PostQuantumKey,
     pub encrypted_classic_sk: String,
     pub encrypted_pqc_sk: String,
     pub classic_sk_nonce: String,
@@ -18,7 +21,7 @@ pub struct GenerateUserMockData {
 
 /// It generates necessary registration data to perform a user
 /// registration request to the Capwat HTTP API.
-pub fn generate_mock_user_keys(passphrase: &str) -> GenerateUserMockData {
+pub fn generate_mock_user_info(passphrase: &str) -> GenerateUserMockData {
     const DERIVED_KEY_BITS: usize = 512 / 8;
 
     // Generate our own salt and derived key
@@ -81,8 +84,8 @@ pub fn generate_mock_user_keys(passphrase: &str) -> GenerateUserMockData {
     GenerateUserMockData {
         salt: UserSalt::from(salt),
         access_key_hash,
-        classic_pk: classic_pk.serialize().to_string(),
-        pqc_pk: pqc_pk.serialize().to_string(),
+        classic_pk: classic_pk.serialize(),
+        pqc_pk: pqc_pk.serialize(),
         encrypted_classic_sk,
         encrypted_pqc_sk,
         classic_sk_nonce,

@@ -19,6 +19,7 @@ pub trait UserPgImpl {
 
     async fn check_email_taken(conn: &mut PgConnection<'_>, email: &str) -> Result<bool>;
     async fn check_username_taken(conn: &mut PgConnection<'_>, name: &str) -> Result<bool>;
+    async fn is_salt_taken(conn: &mut PgConnection<'_>, salt: &str) -> Result<bool>;
 }
 
 #[derive(Debug, Error)]
@@ -64,6 +65,14 @@ impl UserPgImpl for User {
             .erase_context()
     }
 
+    #[tracing::instrument(skip_all, name = "db.query.users.is_salt_taken")]
+    async fn is_salt_taken(conn: &mut PgConnection<'_>, salt: &str) -> Result<bool> {
+        diesel::select(exists(users::table.filter(users::salt.eq(salt))))
+            .get_result::<bool>(&mut *conn)
+            .await
+            .erase_context()
+    }
+
     #[tracing::instrument(skip_all, name = "db.query.users.is_username_taken")]
     async fn check_username_taken(conn: &mut PgConnection<'_>, name: &str) -> Result<bool> {
         diesel::select(exists(
@@ -91,6 +100,7 @@ impl InsertUserPgImpl for InsertUser<'_> {
                 users::display_name.eq(display_name),
                 users::email.eq(self.email),
                 users::access_key_hash.eq(self.access_key_hash),
+                users::salt.eq(self.salt),
                 users::root_classic_pk.eq(self.root_classic_pk),
                 users::root_encrypted_classic_sk.eq(self.root_encrypted_classic_sk),
                 users::root_pqc_pk.eq(self.root_pqc_pk),

@@ -16,6 +16,7 @@ pub struct User {
     pub email_verified: bool,
 
     pub access_key_hash: String,
+    pub salt: String,
     pub root_classic_pk: String,
     pub root_encrypted_classic_sk: String,
     pub root_pqc_pk: String,
@@ -28,6 +29,7 @@ pub struct InsertUser<'a> {
     pub display_name: Option<&'a str>,
     pub email: Option<&'a str>,
     pub access_key_hash: &'a str,
+    pub salt: &'a str,
     pub root_classic_pk: &'a str,
     pub root_encrypted_classic_sk: &'a str,
     pub root_pqc_pk: &'a str,

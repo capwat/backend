@@ -34,6 +34,7 @@ diesel::table! {
         email -> Nullable<Varchar>,
         email_verified -> Bool,
         access_key_hash -> Text,
+        salt -> Text,
         root_classic_pk -> Text,
         root_encrypted_classic_sk -> Text,
         root_pqc_pk -> Text,

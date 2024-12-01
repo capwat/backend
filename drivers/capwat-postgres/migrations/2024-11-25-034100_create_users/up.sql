@@ -8,6 +8,7 @@ CREATE TABLE users (
     email_verified BOOLEAN NOT NULL DEFAULT false,
 
     access_key_hash TEXT NOT NULL UNIQUE,
+    salt TEXT NOT NULL UNIQUE,
 
     root_classic_pk TEXT NOT NULL,
     root_encrypted_classic_sk TEXT NOT NULL,
