@@ -1,8 +1,6 @@
 pub mod category;
 pub use self::category::ErrorCategory;
 
-use self::category::ErrorCode;
-
 #[cfg(feature = "axum")]
 mod axum;
 
@@ -32,44 +30,6 @@ impl Error {
         Self {
             category: self.category,
             message: Some(message.into()),
-        }
-    }
-
-    pub fn code(&self) -> ErrorCode {
-        match &self.category {
-            ErrorCategory::Unknown => ErrorCode::Unknown(None),
-            ErrorCategory::ReadonlyMode => ErrorCode::ReadonlyMode(None),
-            ErrorCategory::InvalidRequest => ErrorCode::InvalidRequest(None),
-            ErrorCategory::Outage => ErrorCode::Outage(None),
-            ErrorCategory::InstanceClosed => ErrorCode::InstanceClosed(None),
-            ErrorCategory::NoEmailAddress => ErrorCode::NoEmailAddress(None),
-            ErrorCategory::EmailVerificationRequired => ErrorCode::EmailVerificationRequired(None),
-            ErrorCategory::LoginUserFailed(login_user_failed) => match login_user_failed {
-                category::LoginUserFailed::InvalidCredientials => ErrorCode::LoginUserFailed(Some(
-                    category::LoginUserFailedSubcode::InvalidCredientials,
-                )),
-            },
-            ErrorCategory::RegisterUserFailed(register_user_failed) => match register_user_failed {
-                category::RegisterUserFailed::Closed => {
-                    ErrorCode::RegisterUserFailed(Some(category::RegisterUserFailedSubcode::Closed))
-                }
-                category::RegisterUserFailed::InvalidPassword => ErrorCode::RegisterUserFailed(
-                    Some(category::RegisterUserFailedSubcode::InvalidPassword),
-                ),
-                category::RegisterUserFailed::UnmatchedPassword => ErrorCode::RegisterUserFailed(
-                    Some(category::RegisterUserFailedSubcode::UnmatchedPassword),
-                ),
-                category::RegisterUserFailed::UsernameTaken => ErrorCode::RegisterUserFailed(Some(
-                    category::RegisterUserFailedSubcode::UsernameTaken,
-                )),
-                category::RegisterUserFailed::EmailTaken => ErrorCode::RegisterUserFailed(Some(
-                    category::RegisterUserFailedSubcode::EmailTaken,
-                )),
-                category::RegisterUserFailed::EmailRequired => ErrorCode::RegisterUserFailed(Some(
-                    category::RegisterUserFailedSubcode::EmailRequired,
-                )),
-            },
-            ErrorCategory::Other(other_error) => other_error.code.clone(),
         }
     }
 }

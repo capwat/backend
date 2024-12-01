@@ -9,7 +9,7 @@ rust-version.workspace = true
 with_diesel = ["diesel", "diesel-derive-newtype", "diesel-derive-enum"]
 
 [dependencies]
-capwat-api-types    = { workspace = true, features = ["server"] }
+capwat-api-types = { workspace = true, features = ["server"] }
 
 bon.workspace = true
 chrono.workspace = true

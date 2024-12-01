@@ -4,8 +4,22 @@ use std::task::Poll;
 use std::time::Duration;
 use tokio::time::Sleep;
 
-/// This timer allows to perform an operation and waits until the duration
-/// timer is completed or not wait if the duration timer exceeds while the
+/// This extension trait allows to easily create [`SubtleTiming`] directly from
+/// a [`Future`] value without having to explicitly declare it with [`SubtleTiming::new`].
+pub trait SubtleTimingFutureExt: Future {
+    fn subtle_timing(self, duration: Duration) -> SubtleTiming<Self>
+    where
+        Self: Sized;
+}
+
+impl<F: Future> SubtleTimingFutureExt for F {
+    fn subtle_timing(self, duration: Duration) -> SubtleTiming<Self> {
+        SubtleTiming::new(self, duration)
+    }
+}
+
+/// It allows to perform an operation and waits until the duration timer
+/// is completed or not wait if the duration timer exceeds while the
 /// operation is ongoing. This allows for the future to have some kind of
 /// consistent execution time.
 ///
@@ -13,17 +27,20 @@ use tokio::time::Sleep;
 /// in cybersecurity manner.
 #[pin_project]
 #[derive(Debug)]
-pub struct ConsistentRuntime<F: Future> {
+#[must_use]
+pub struct SubtleTiming<F: Future> {
     #[pin]
     future: F,
+    /// This is to keep our results if it hasn't reached
+    /// our subtle timer duration yet.
     result: Option<F::Output>,
     #[pin]
     sleep: Sleep,
 }
 
-impl<F: Future> ConsistentRuntime<F> {
+impl<F: Future> SubtleTiming<F> {
     #[must_use]
-    pub fn new(duration: Duration, future: F) -> Self {
+    pub fn new(future: F, duration: Duration) -> Self {
         Self {
             future,
             result: None,
@@ -32,7 +49,7 @@ impl<F: Future> ConsistentRuntime<F> {
     }
 }
 
-impl<F: Future> Future for ConsistentRuntime<F> {
+impl<F: Future> Future for SubtleTiming<F> {
     type Output = F::Output;
 
     fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {

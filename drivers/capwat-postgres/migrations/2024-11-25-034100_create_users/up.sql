@@ -6,5 +6,12 @@ CREATE TABLE users (
     display_name VARCHAR(30),
     email VARCHAR(254) CHECK(length(email) > 0),
     email_verified BOOLEAN NOT NULL DEFAULT false,
-    password_hash TEXT NOT NULL CHECK(length(password_hash) > 0)
+
+    access_key_hash TEXT NOT NULL UNIQUE,
+
+    root_classic_pk TEXT NOT NULL,
+    root_encrypted_classic_sk TEXT NOT NULL,
+
+    root_pqc_pk TEXT NOT NULL,
+    root_encrypted_pqc_sk TEXT NOT NULL
 );

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::users::{UserClassicKeys, UserPostQuantumKeys, UserSalt};
 use crate::util::Sensitive;
 
 /// Log in as a user to Capwat.
@@ -8,7 +9,7 @@ use crate::util::Sensitive;
 #[cfg_attr(feature = "server", builder(on(Sensitive<String>, into)))]
 pub struct LoginUser {
     pub name_or_email: Sensitive<String>,
-    pub password: Sensitive<String>,
+    pub access_key: Sensitive<String>,
 }
 
 /// Sign up to Capwat.
@@ -18,10 +19,12 @@ pub struct LoginUser {
 pub struct RegisterUser {
     pub name: Sensitive<String>,
     pub email: Option<Sensitive<String>>,
+    pub access_key_hash: Sensitive<String>,
 
-    // TODO: Let the user generate their own password hashes
-    pub password: Sensitive<String>,
-    pub password_verify: Sensitive<String>,
+    pub classic_keys: Sensitive<UserClassicKeys>,
+    pub pqc_keys: Sensitive<UserPostQuantumKeys>,
+
+    pub salt: Sensitive<UserSalt>,
 }
 
 /// A response after registration is successfully performed.

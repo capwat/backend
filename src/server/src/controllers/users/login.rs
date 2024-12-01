@@ -1,6 +1,7 @@
 use axum::response::{IntoResponse, Response};
 use capwat_api_types::error::category::LoginUserFailed;
 use capwat_api_types::routes::users::LoginUser;
+use capwat_crypto::future::SubtleTimerFutureExt;
 use capwat_error::ext::ResultExt;
 use capwat_error::{ApiError, ApiErrorCategory};
 use capwat_model::instance_settings::InstanceSettings;
@@ -12,7 +13,7 @@ use tokio::task::spawn_blocking;
 
 use crate::extract::{Json, LocalInstanceSettings, RequiresCaptcha};
 use crate::utils::users::check_email_status;
-use crate::utils::{users::verify_pasword, ConsistentRuntime};
+use crate::utils::users::verify_pasword;
 use crate::App;
 
 pub async fn login(
@@ -22,7 +23,9 @@ pub async fn login(
     Json(form): Json<LoginUser>,
 ) -> Result<Response, ApiError> {
     // 1 second / login request
-    ConsistentRuntime::new(Duration::from_secs(1), login_inner(app, form, settings)).await
+    login_inner(app, form, settings)
+        .subtle_timing(Duration::from_secs(1))
+        .await
 }
 
 #[tracing::instrument(skip(app), name = "v1.users.login")]

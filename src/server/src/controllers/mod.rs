@@ -1,9 +1,8 @@
 use crate::App;
-
 use axum::routing::{get, post};
 use axum::Router;
 
-pub mod users;
+mod users;
 
 pub async fn index() -> &'static str {
     "Hello, World!"
@@ -13,7 +12,7 @@ pub async fn index() -> &'static str {
 fn build_v1_router(app: App) -> Router {
     Router::new()
         .route("/", get(index))
-        .route("/users/login", post(users::login::login))
+        // .route("/users/login", post(users::login::login))
         .route("/users/register", post(users::register::register))
         .with_state(app)
 }

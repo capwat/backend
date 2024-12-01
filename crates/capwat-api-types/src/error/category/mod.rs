@@ -45,11 +45,14 @@ capwat_macros::define_error_category! {
         RegisterUserFailed {
             /// User registration is closed!
             Closed,
-            InvalidPassword,
-            UnmatchedPassword,
+
             UsernameTaken,
             EmailTaken,
             EmailRequired,
+
+            PublicKeyNotUnique,
+            SaltNotUnique,
+            UnsupportedKeyAlgorithm,
         },
 
         // CaptchaRequired(CaptchaInfo)

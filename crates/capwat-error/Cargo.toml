@@ -5,12 +5,20 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+[features]
+server = [
+    "capwat-api-types/server",
+    "error-stack/serde",
+    "error-stack/spantrace",
+    "tracing"
+]
+
 [dependencies]
 serde               = { workspace = true, optional = true }
 
-capwat-api-types    = { workspace = true, features = ["server"] }
+capwat-api-types    = { workspace = true }
 error-stack         = { workspace = true }
-tracing             = { workspace = true }
+tracing             = { workspace = true, optional = true }
 
 [lints]
 workspace = true

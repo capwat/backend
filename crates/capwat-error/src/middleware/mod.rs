@@ -18,7 +18,7 @@ mod std_middleware;
 
 /// Contains internal crate for `capwat-error`, error-stack.
 pub mod impls {
-    pub use error_stack::{Context, Report};
+    pub use error_stack::{Context, Frame, Report};
 }
 
 type StoredMiddleware = Arc<

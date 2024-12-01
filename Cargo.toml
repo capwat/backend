@@ -15,6 +15,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(release)'] }
 # core dependencies
 capwat-api-types    = { path = "crates/capwat-api-types" }
 capwat-config       = { path = "crates/capwat-config" }
+capwat-crypto       = { path = "crates/capwat-crypto" }
 capwat-error        = { path = "crates/capwat-error" }
 capwat-macros       = { path = "crates/capwat-macros" }
 capwat-model        = { path = "crates/capwat-model" }
@@ -25,7 +26,7 @@ capwat-vfs          = { path = "crates/capwat-vfs" }
 capwat-postgres     = { path = "drivers/capwat-postgres" }
 
 # diagnostics
-error-stack         = { git = "https://github.com/memothelemo/error-stack", rev = "01b348a", features = ["spantrace", "serde"] }
+error-stack         = { git = "https://github.com/memothelemo/error-stack", rev = "01b348a" }
 tracing             = "0.1.40"
 tracing-subscriber  = { version = "0.3.18", features = ["chrono", "env-filter"] }
 
@@ -38,11 +39,14 @@ futures         = "0.3.31"
 rustls          = "0.23.18"
 tokio           = { version = "1.41.1", features = ["full"] }
 
-# useful macros and crates
+# cryptographic crates
 argon2            = "0.5.3"
+
+# useful macros and crates
 async-trait       = "0.1.83"
 bon               = "3.0.1"
 dashmap           = "6.1.0"
+getrandom         = "0.2.15"
 paste             = "1.0.15"
 static_assertions = "1.1.0"
 strum             = { version = "0.26.3", features = ["derive"] }
@@ -54,7 +58,35 @@ bitflags    = { version = "2.6.0" }
 chrono      = { version = "0.4.38", features = ["serde"] }
 uuid        = { version = "1.11.0", features = ["v7"] }
 
-# serialization
+# encoding and serialization
+base64      = "0.22.1"
 serde       = { version = "1.0.214", features = ["derive"] }
 serde_with  = "3.9.0"
 serde_json  = "1.0.132"
+
+[profile.dev.package.scrypt]
+opt-level = 3
+
+[profile.dev.package.base64]
+opt-level = 3
+
+[profile.dev.package.block-buffer]
+opt-level = 3
+
+[profile.dev.package.cipher]
+opt-level = 3
+
+[profile.dev.package.digest]
+opt-level = 3
+
+[profile.dev.package.pbkdf2]
+opt-level = 3
+
+[profile.dev.package.salsa20]
+opt-level = 3
+
+[profile.dev.package.subtle]
+opt-level = 3
+
+[profile.dev.package.zeroize]
+opt-level = 3

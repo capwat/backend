@@ -90,7 +90,11 @@ impl InsertUserPgImpl for InsertUser<'_> {
                 users::name.eq(self.name),
                 users::display_name.eq(display_name),
                 users::email.eq(self.email),
-                users::password_hash.eq(self.password_hash),
+                users::access_key_hash.eq(self.access_key_hash),
+                users::root_classic_pk.eq(self.root_classic_pk),
+                users::root_encrypted_classic_sk.eq(self.root_encrypted_classic_sk),
+                users::root_pqc_pk.eq(self.root_pqc_pk),
+                users::root_encrypted_pqc_sk.eq(self.root_encrypted_pqc_sk),
             ))
             .get_result(&mut *conn)
             .await

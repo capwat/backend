@@ -33,7 +33,11 @@ diesel::table! {
         #[max_length = 254]
         email -> Nullable<Varchar>,
         email_verified -> Bool,
-        password_hash -> Text,
+        access_key_hash -> Text,
+        root_classic_pk -> Text,
+        root_encrypted_classic_sk -> Text,
+        root_pqc_pk -> Text,
+        root_encrypted_pqc_sk -> Text,
     }
 }
 

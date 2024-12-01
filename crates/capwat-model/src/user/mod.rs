@@ -14,17 +14,24 @@ pub struct User {
     pub display_name: Option<String>,
     pub email: Option<String>,
     pub email_verified: bool,
-    pub password_hash: String,
+
+    pub access_key_hash: String,
+    pub root_classic_pk: String,
+    pub root_encrypted_classic_sk: String,
+    pub root_pqc_pk: String,
+    pub root_encrypted_pqc_sk: String,
 }
 
 #[derive(Builder)]
 pub struct InsertUser<'a> {
-    #[builder(into)]
     pub name: &'a str,
     pub display_name: Option<&'a str>,
     pub email: Option<&'a str>,
-    #[builder(into)]
-    pub password_hash: &'a str,
+    pub access_key_hash: &'a str,
+    pub root_classic_pk: &'a str,
+    pub root_encrypted_classic_sk: &'a str,
+    pub root_pqc_pk: &'a str,
+    pub root_encrypted_pqc_sk: &'a str,
 }
 
 #[derive(Builder)]
@@ -39,6 +46,4 @@ pub struct UpdateUser<'a> {
     #[builder(into)]
     pub email: Option<&'a str>,
     pub email_verified: Option<bool>,
-    #[builder(into)]
-    pub password_hash: Option<&'a str>,
 }

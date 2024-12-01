@@ -3,6 +3,8 @@ mod protected_string;
 pub mod env;
 pub mod serde_exts;
 
+// TODO: Remove this thing here i guess and probably implement
+//       our own CacheLock with moka::Cache inside.
 pub use moka;
 
 /// This value determines whether it was compiled in release mode

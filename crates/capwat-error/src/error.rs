@@ -5,6 +5,7 @@
 use capwat_api_types::ErrorCategory;
 use core::{fmt, marker::PhantomData};
 use error_stack::Context;
+#[cfg(feature = "server")]
 use tracing::Span;
 
 use crate::context::make_report;
@@ -150,6 +151,7 @@ impl<C> Error<C> {
         }
     }
 
+    #[cfg(feature = "server")]
     #[must_use]
     pub fn span(&self) -> &Span {
         &self.inner.span
@@ -178,6 +180,7 @@ impl<C: Context> From<C> for Error<C> {
     }
 }
 
+#[cfg(feature = "server")]
 impl<C> Error<C> {
     pub fn into_api_error(self) -> capwat_api_types::Error {
         use capwat_api_types::Error as ApiError;
@@ -201,6 +204,7 @@ impl<C> Error<C> {
     }
 }
 
+#[cfg(feature = "server")]
 impl<C> From<Error<C>> for capwat_api_types::Error {
     fn from(value: Error<C>) -> Self {
         value.into_api_error()

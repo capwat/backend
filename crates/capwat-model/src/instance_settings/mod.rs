@@ -1,7 +1,9 @@
 use bon::Builder;
 use chrono::NaiveDateTime;
-use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "with_diesel")]
+use diesel_derive_enum::DbEnum;
 
 use crate::id::InstanceId;
 
@@ -28,10 +30,14 @@ pub struct UpdateInstanceSettings {
     pub require_captcha: Option<bool>,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize, DbEnum)]
-#[ExistingTypePath = "crate::diesel::schema::sql_types::RegistrationMode"]
-#[DbValueStyle = "kebab-case"]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "with_diesel", derive(DbEnum))]
+#[cfg_attr(
+    feature = "with_diesel",
+    ExistingTypePath = "crate::diesel::schema::sql_types::RegistrationMode"
+)]
+#[cfg_attr(feature = "with_diesel", DbValueStyle = "kebab-case")]
 pub enum RegistrationMode {
     /// Open to all users
     #[default]
