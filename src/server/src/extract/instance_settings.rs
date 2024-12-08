@@ -1,8 +1,8 @@
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
-use capwat_model::instance_settings::InstanceSettings;
-use capwat_postgres::queries::instance_settings::InstanceSettingsPgImpl;
+use capwat_model::instance::InstanceSettings;
+use capwat_postgres::impls::InstanceSettingsPgImpl;
 use std::ops::Deref;
 
 use crate::App;
@@ -28,7 +28,7 @@ impl FromRequestParts<App> for LocalInstanceSettings {
         let app = App::from_request_parts(parts, state).await?;
 
         let mut conn = app
-            .db_read_prefer_primary()
+            .db_read()
             .await
             .map_err(|e| e.into_api_error().into_response())?;
 

@@ -16,10 +16,10 @@ static CONTEXT: LazyLock<Argon2<'static>> = LazyLock::new(|| {
 #[error("Failed to generate password hash")]
 pub struct HashPasswordError;
 
-pub fn hash(password: &str) -> Result<String, HashPasswordError> {
+pub fn hash(password: impl AsRef<[u8]>) -> Result<String, HashPasswordError> {
     let salt = SaltString::generate(&mut crate::default_rng());
     let password_hash = CONTEXT
-        .hash_password(password.as_bytes(), &salt)
+        .hash_password(password.as_ref(), &salt)
         .change_context(HashPasswordError)?;
 
     Ok(password_hash.to_string())
@@ -29,12 +29,12 @@ pub fn hash(password: &str) -> Result<String, HashPasswordError> {
 #[error("Failed to verify password")]
 pub struct VerifyPasswordError;
 
-pub fn verify(password: &str, hash: &str) -> Result<bool, VerifyPasswordError> {
+pub fn verify(password: &[u8], hash: &str) -> Result<bool, VerifyPasswordError> {
     let hash = PasswordHash::new(hash)
         .change_context(VerifyPasswordError)
         .attach_printable("could not parse password hash")?;
 
-    match CONTEXT.verify_password(password.as_bytes(), &hash) {
+    match CONTEXT.verify_password(password, &hash) {
         Ok(..) => Ok(true),
         Err(argon2::password_hash::Error::Password) => Ok(false),
         Err(error) => Err(error).change_context(VerifyPasswordError),

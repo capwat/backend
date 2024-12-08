@@ -2,8 +2,8 @@
 # see https://diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "crates/capwat-model/src/diesel/schema.rs"
+file = "src/model/src/diesel/schema.rs"
 custom_type_derives = ["diesel::query_builder::QueryId"]
 
 [migrations_directory]
-dir = "drivers/capwat-postgres/migrations"
+dir = "src/database/postgres/migrations"

@@ -1,7 +1,6 @@
-use capwat_crypto::client::generate_mock_user_info;
 use capwat_error::{ext::ResultExt, Result};
-use capwat_model::instance_settings::InstanceSettings;
-use capwat_postgres::queries::instance_settings::InstanceSettingsPgImpl;
+use capwat_model::instance::InstanceSettings;
+use capwat_postgres::impls::InstanceSettingsPgImpl;
 use capwat_server::App;
 use capwat_utils::env::load_dotenv;
 use capwat_vfs::Vfs;
@@ -28,10 +27,11 @@ async fn setup_instance(app: App) -> Result<()> {
 }
 
 async fn stuff(config: capwat_config::Server, vfs: Vfs) -> Result<()> {
-    let data = generate_mock_user_info("memothelemo");
-    println!("{data:#?}");
+    if !capwat_utils::RELEASE {
+        info!(?config, "Starting Capwat HTTP server with configuration...");
+    }
 
-    let app = App::new(config, vfs);
+    let app = App::new(config, vfs)?;
     tokio::spawn({
         let app = app.clone();
         async move {
@@ -53,7 +53,7 @@ async fn stuff(config: capwat_config::Server, vfs: Vfs) -> Result<()> {
     let router = capwat_server::middleware::apply(router);
 
     info!(
-        "Confessions server is listening at http://{addr} with {} workers",
+        "Capwat HTTP server is listening at http://{addr} with {} workers",
         app.config.workers
     );
 

@@ -4,10 +4,10 @@ use capwat_api_types::error::category::RegisterUserFailed;
 use capwat_api_types::routes::users::{RegisterUser, RegisterUserResponse};
 use capwat_error::ext::ResultExt;
 use capwat_error::{ApiError, ApiErrorCategory};
-use capwat_model::instance_settings::RegistrationMode;
+use capwat_model::instance::RegistrationMode;
 use capwat_model::user::InsertUser;
 use capwat_model::User;
-use capwat_postgres::queries::users::{InsertUserPgImpl, UserPgImpl};
+use capwat_postgres::impls::users::{InsertUserPgImpl, UserPgImpl};
 use tokio::task::spawn_blocking;
 
 use crate::extract::{Json, LocalInstanceSettings};
@@ -44,10 +44,8 @@ pub async fn register(
         )));
     }
 
-    // We need to hash it twice because we'll going to calculate
-    // our own SHA256 of access key anyway.
     let access_key_hash =
-        spawn_blocking(move || capwat_crypto::argon2::hash(&form.access_key_hash))
+        spawn_blocking(move || capwat_crypto::argon2::hash(form.access_key_hash.decode()))
             .await
             .erase_context()??;
 
@@ -55,13 +53,12 @@ pub async fn register(
         .name(form.name.as_str())
         .maybe_email(form.email.as_ref().map(|v| v.as_str()))
         .access_key_hash(&*access_key_hash)
+        .encrypted_symmetric_key(&form.symmetric_key.value().to_string())
         .salt(&form.salt.value().to_string())
-        .root_classic_pk(&*form.classic_keys.public.value().to_string())
-        .root_encrypted_classic_sk(&form.classic_keys.encrypted_private.value())
-        .root_pqc_pk(&*form.pqc_keys.public.value().to_string())
-        .root_encrypted_pqc_sk(&*form.pqc_keys.encrypted_private)
+        .public_key(&form.classic_keys.public.value().to_string())
+        .encrypted_secret_key(&form.classic_keys.encrypted_private.value().to_string())
         .build()
-        .create(&mut conn)
+        .insert(&mut conn)
         .await?;
 
     let response = RegisterUserResponse {
@@ -76,34 +73,24 @@ pub async fn register(
 mod tests {
     use crate::utils::test::build_test_server;
     use axum::http::StatusCode;
-    use capwat_api_types::{
-        routes::users::RegisterUser,
-        users::{UserClassicKeys, UserPostQuantumKeys},
-    };
+    use capwat_api_types::{routes::users::RegisterUser, user::UserClassicKeys};
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_register_user() {
         let (server, _) = build_test_server().await;
+        let params = capwat_crypto::client::generate_register_user_params("test");
 
-        let user_info = capwat_crypto::client::generate_mock_user_info("marie-curie-is-my-hero");
         let body = RegisterUser::builder()
             .name("test_bot")
             .email("test@example.com")
-            .access_key_hash(user_info.access_key_hash)
-            .salt(user_info.salt.into())
+            .access_key_hash(params.access_key_hash)
+            .salt(params.salt)
+            .symmetric_key(params.encrypted_symmetric_key)
             .classic_keys(
                 UserClassicKeys::builder()
-                    .encrypted_private(user_info.encrypted_classic_sk.into())
-                    .public(user_info.classic_pk)
-                    .build()
-                    .into(),
-            )
-            .pqc_keys(
-                UserPostQuantumKeys::builder()
-                    .encrypted_private(user_info.encrypted_pqc_sk.into())
-                    .public(user_info.pqc_pk)
-                    .build()
-                    .into(),
+                    .public(params.public_key)
+                    .encrypted_private(params.encrypted_secret_key)
+                    .build(),
             )
             .build();
 

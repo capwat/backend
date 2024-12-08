@@ -2,6 +2,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
+use super::category::LoginUserFailed;
 use super::{Error, ErrorCategory};
 
 impl IntoResponse for Error {
@@ -12,7 +13,13 @@ impl IntoResponse for Error {
             ErrorCategory::InvalidRequest => StatusCode::BAD_REQUEST,
             ErrorCategory::Outage => StatusCode::SERVICE_UNAVAILABLE,
             ErrorCategory::InstanceClosed => StatusCode::SERVICE_UNAVAILABLE,
-            ErrorCategory::LoginUserFailed(..) => StatusCode::FORBIDDEN,
+            ErrorCategory::LoginUserFailed(data) => match data {
+                LoginUserFailed::InvalidCredientials => StatusCode::FORBIDDEN,
+                LoginUserFailed::AccessKeyRequired(..) => StatusCode::BAD_REQUEST,
+            },
+            ErrorCategory::AccessDenied => StatusCode::UNAUTHORIZED,
+            ErrorCategory::KeysExpired => StatusCode::FORBIDDEN,
+            ErrorCategory::ExpiredToken => StatusCode::FORBIDDEN,
             // As prescribed from the documentation
             ErrorCategory::NoEmailAddress => StatusCode::FORBIDDEN,
             ErrorCategory::RegisterUserFailed(..) => StatusCode::BAD_REQUEST,

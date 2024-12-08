@@ -3,4 +3,5 @@
 /logs
 .env
 
+**/jwt.private.pem
 **/capwat.toml

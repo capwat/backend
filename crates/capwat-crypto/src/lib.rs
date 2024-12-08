@@ -4,10 +4,9 @@
 // algorithms like `ML-KEM`.
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha20Rng;
-use std::time::SystemTime;
 
-mod salt;
-pub use self::salt::{generate_salt, CapwatSaltArray};
+pub mod hash;
+pub mod salt;
 
 // Re-exports of capwat-error because why not.
 pub use capwat_error::{Error, Result};
@@ -17,7 +16,11 @@ pub mod aead;
 #[cfg(feature = "server")]
 pub mod argon2;
 pub mod curve25519;
-pub mod ml_kem768;
+pub mod derive;
+pub mod rsa;
+
+// Post-quantum encryption is not our priority at the moment...
+// pub mod ml_kem768;
 
 /// Simulates the client protocol for the Capwat API such as
 /// key generation, encryption and so on.
@@ -30,20 +33,15 @@ pub mod client;
 #[cfg(feature = "server")]
 pub mod future;
 
-/// Derives a unique key with a number of elements from a
-/// passphrase and salt array.
-#[must_use]
-pub fn derive_key<const N: usize>(passphrase: &[u8], salt: &CapwatSaltArray) -> [u8; N] {
-    let mut buffer = [0u8; N];
-    scrypt::scrypt(
-        passphrase,
-        salt,
-        &scrypt::Params::recommended(),
-        &mut buffer,
-    )
-    .unwrap();
-    buffer
+pub mod base64 {
+    use base64::{prelude::BASE64_URL_SAFE, Engine};
+
+    #[must_use]
+    pub fn encode(data: impl AsRef<[u8]>) -> String {
+        BASE64_URL_SAFE.encode(data)
+    }
 }
+pub use ::hex;
 
 /// Gets the default RNG (random number generator) for `capwat-server`
 /// which is [`ChaCha20Rng`].
@@ -51,6 +49,5 @@ pub fn default_rng() -> ChaCha20Rng {
     // Our default RNG (random number generator) which is [`ChaCha20Rng`]. This
     // random number generator allows to generate secure numbers but also to
     // provides good performance which is critical for server use case.
-    let seed = SystemTime::UNIX_EPOCH.elapsed().unwrap_or_default();
-    ChaCha20Rng::seed_from_u64(seed.as_millis() as u64)
+    ChaCha20Rng::from_entropy()
 }

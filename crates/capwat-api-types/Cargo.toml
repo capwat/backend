@@ -6,12 +6,14 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
+experimental = []
 server = ["axum", "bon"]
 
 [dependencies]
 base64.workspace = true
 capwat-macros.workspace = true
 either = { version = "1.13.0", features = ["serde"] }
+hex.workspace = true
 paste.workspace = true
 serde.workspace = true
 serde_json.workspace = true

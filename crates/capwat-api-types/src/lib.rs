@@ -1,7 +1,9 @@
-pub mod e2ee;
+pub mod encrypt;
 pub mod error;
 pub mod routes;
-pub mod users;
+pub mod user;
 pub mod util;
+
+mod internal;
 
 pub use self::error::{Error, ErrorCategory};

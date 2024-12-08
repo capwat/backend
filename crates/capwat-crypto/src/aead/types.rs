@@ -27,6 +27,16 @@ impl Key {
         Some(Self(slice))
     }
 
+    #[must_use]
+    pub fn from_exact_slice(slice: &[u8; 32]) -> Self {
+        Self(*slice)
+    }
+
+    #[must_use]
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
     pub(super) fn as_aead(&self) -> &chacha20poly1305::Key {
         chacha20poly1305::Key::from_slice(&self.0)
     }

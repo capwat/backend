@@ -6,9 +6,9 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-capwat-api-types    = { workspace = true, features = ["server"] }
-capwat-error        = { workspace = true }
-capwat-vfs          = { workspace = true }
+capwat-api-types = { workspace = true, features = ["server"] }
+capwat-error = { workspace = true }
+capwat-vfs = { workspace = true }
 
 dotenvy = "0.15.7"
 fundu = { version = "2.0.0", features = ["chrono"] }

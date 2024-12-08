@@ -1,12 +1,13 @@
 use base64::Engine;
-use capwat_api_types::e2ee::{PostQuantumKey, PostQuantumKeyType};
+use capwat_api_types::encrypt::{PostQuantumKey, PostQuantumKeyType};
 use capwat_error::{ext::ResultExt, Error, Result};
+use std::fmt::Debug;
+use thiserror::Error;
+
 use ml_kem::{
     kem::{DecapsulationKey, EncapsulationKey},
     EncodedSizeUser, KemCore, MlKem768, MlKem768Params,
 };
-use std::fmt::Debug;
-use thiserror::Error;
 
 /// Key pairs for the Curve25519 algorithm.
 #[derive(Debug, Clone)]
@@ -65,14 +66,13 @@ impl PublicKey {
     /// [`PostQuantumKey`]: capwat_api_types::e2ee::PostQuantumKey
     #[must_use]
     pub fn serialize(&self) -> PostQuantumKey {
-        let key_contents = self
-            .0
-            .as_bytes()
-            .as_slice()
-            .try_into()
-            .expect("unexpected ml-kem768 public key goes not equal to 1184 bytes");
+        let key_contents = self.0.as_bytes().as_slice().to_vec();
 
-        PostQuantumKey::MlKem768(key_contents)
+        assert_eq!(
+            key_contents.len(),
+            PostQuantumKeyType::MLKEM_768_PUBLIC_SIZE
+        );
+        PostQuantumKey::new(PostQuantumKeyType::MlKem768Public, key_contents).unwrap()
     }
 }
 
@@ -90,6 +90,12 @@ impl Debug for SecretKey {
 pub struct InvalidSecretKey;
 
 impl SecretKey {
+    /// Gets the raw bytes of a private ML-KEM768 key.
+    #[must_use]
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
+    }
+
     /// Deserializes the secret ML-KEM768 key from Base64 encoded string
     #[must_use]
     pub fn deserialize(value: &str) -> Result<Self, InvalidSecretKey> {
@@ -114,11 +120,13 @@ impl SecretKey {
     /// Serializes the secret key into a Base64 encoded string that can
     /// be used to deserialize when needed.
     #[must_use]
-    pub fn serialize(&self) -> String {
-        let mut buffer = Vec::with_capacity(1 + self.0.as_bytes().len());
-        buffer.push(PostQuantumKeyType::MlKem768.value());
-        buffer.extend_from_slice(&self.0.as_bytes());
+    pub fn serialize(&self) -> PostQuantumKey {
+        let key_contents: Vec<u8> = self.0.as_bytes().as_slice().to_vec();
 
-        base64::engine::general_purpose::URL_SAFE.encode(buffer)
+        assert_eq!(
+            key_contents.len(),
+            PostQuantumKeyType::MLKEM_768_PRIVATE_SIZE
+        );
+        PostQuantumKey::new(PostQuantumKeyType::MlKem768Private, key_contents).unwrap()
     }
 }

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "server")]
 use strum::Display;
 
+use crate::user::UserSalt;
+
 capwat_macros::define_error_category! {
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     #[cfg_attr(feature = "server", derive(Display))]
@@ -28,14 +30,34 @@ capwat_macros::define_error_category! {
         /// requires you to do that. Please comply before using the service.
         NoEmailAddress,
 
+        /// You cannot or don't have a permission to access a specific resource.
+        AccessDenied,
+
+        /// Whoops! Your token has been expired/terminated! Please log in again.
+        ExpiredToken,
+
         /// You haven't verified your email address yet. Please do so before you
         /// operate the entire API.
         EmailVerificationRequired,
+
+        /// Your public and private keys are expired from your instance
+        /// for security reasons.
+        ///
+        /// Please renew your public and private keys before using the
+        /// service again.
+        KeysExpired,
 
         /// This variant shows the possiblities of why logging in as a user
         /// failed in the first place.
         #[derive(Debug, Clone, PartialEq, Eq, Hash)]
         LoginUserFailed {
+            /// This variant allows the user to derive their access key hash
+            /// by providing them with salt. However, if the user entered invalid
+            /// credientials then they should expect an invalid user salt.
+            AccessKeyRequired(AccessKeyRequiredInfo),
+
+            /// The graveyard error! Whoops! You should try another combination
+            /// of usernames or passphrases to hack someone's account!
             InvalidCredientials,
         },
 
@@ -57,6 +79,11 @@ capwat_macros::define_error_category! {
 
         // CaptchaRequired(CaptchaInfo)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub struct AccessKeyRequiredInfo {
+    pub salt: UserSalt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

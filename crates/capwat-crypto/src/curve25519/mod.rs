@@ -28,14 +28,9 @@ pub fn encrypt(
             .attach_printable("conflicting public recipient key");
     }
 
-    let nonce = aead::Nonce::generate();
     let derived_key = derive_aead_key(&shared_secret);
-
-    let mut ciphertext = nonce.as_slice().to_vec();
-    ciphertext.extend_from_slice(
-        &aead::encrypt(plaintext, &derived_key, &nonce)
-            .map_err(|_| Error::unknown(aead::EncryptError))?,
-    );
+    let ciphertext =
+        aead::encrypt(plaintext, &derived_key).map_err(|_| Error::unknown(aead::EncryptError))?;
 
     Ok((ciphertext, ephemeral_public_key))
 }
@@ -54,16 +49,8 @@ pub fn decrypt(
             .attach_printable("conflicting recipient and sender's ephemeral keys"));
     }
 
-    // ciphertext is too small to decrypt it since we need to get
-    // the nonce directly from the ciphertext.
-    if ciphertext.len() < 12 {
-        return Err(Error::unknown(aead::DecryptError));
-    }
-
-    let nonce = aead::Nonce::from_slice(&ciphertext[0..12]).unwrap();
     let derived_key = derive_aead_key(&shared_secret);
-    aead::decrypt(&ciphertext[12..], &derived_key, &nonce)
-        .map_err(|_| Error::unknown(aead::DecryptError))
+    aead::decrypt(&ciphertext[12..], &derived_key).map_err(|_| Error::unknown(aead::DecryptError))
 }
 
 /// Derives an AEAD key from shared secret key.

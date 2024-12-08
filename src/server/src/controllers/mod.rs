@@ -2,6 +2,8 @@ use crate::App;
 use axum::routing::{get, post};
 use axum::Router;
 
+mod admin;
+mod checkers;
 mod users;
 
 pub async fn index() -> &'static str {
@@ -12,7 +14,12 @@ pub async fn index() -> &'static str {
 fn build_v1_router(app: App) -> Router {
     Router::new()
         .route("/", get(index))
-        // .route("/users/login", post(users::login::login))
+        .route(
+            "/admin/instance/settings",
+            get(admin::instance::settings::get),
+        )
+        .route("/users/@me", get(users::profile::local_profile))
+        .route("/users/login", post(users::login::login))
         .route("/users/register", post(users::register::register))
         .with_state(app)
 }

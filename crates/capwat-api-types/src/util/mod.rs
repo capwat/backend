@@ -1,3 +1,6 @@
+mod base64;
+pub use self::base64::EncodedBase64;
+
 #[cfg(feature = "server")]
 mod sensitive;
 

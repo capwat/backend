@@ -1,5 +1,12 @@
 [workspace]
-members = ["crates/*", "drivers/*", "src/*"]
+members = [
+    "crates/*",
+    "src/config",
+    "src/database/*",
+    "src/model",
+    "src/server",
+    "src/tracing",
+]
 resolver = "2"
 
 [workspace.package]
@@ -14,16 +21,16 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(release)'] }
 [workspace.dependencies]
 # core dependencies
 capwat-api-types    = { path = "crates/capwat-api-types" }
-capwat-config       = { path = "crates/capwat-config" }
 capwat-crypto       = { path = "crates/capwat-crypto" }
 capwat-error        = { path = "crates/capwat-error" }
 capwat-macros       = { path = "crates/capwat-macros" }
-capwat-model        = { path = "crates/capwat-model" }
-capwat-tracing      = { path = "crates/capwat-tracing" }
 capwat-utils        = { path = "crates/capwat-utils" }
 capwat-vfs          = { path = "crates/capwat-vfs" }
 
-capwat-postgres     = { path = "drivers/capwat-postgres" }
+capwat-config       = { path = "src/config" }
+capwat-postgres     = { path = "src/database/postgres" }
+capwat-model        = { path = "src/model" }
+capwat-tracing      = { path = "src/tracing" }
 
 # diagnostics
 error-stack         = { git = "https://github.com/memothelemo/error-stack", rev = "01b348a" }
@@ -60,6 +67,7 @@ uuid        = { version = "1.11.0", features = ["v7"] }
 
 # encoding and serialization
 base64      = "0.22.1"
+hex         = "0.4.3"
 serde       = { version = "1.0.214", features = ["derive"] }
 serde_with  = "3.9.0"
 serde_json  = "1.0.132"
@@ -79,7 +87,19 @@ opt-level = 3
 [profile.dev.package.digest]
 opt-level = 3
 
+[profile.dev.package.hybrid-array]
+opt-level = 3
+
+[profile.dev.package.ml-kem]
+opt-level = 3
+
 [profile.dev.package.pbkdf2]
+opt-level = 3
+
+[profile.dev.package.rand_core]
+opt-level = 3
+
+[profile.dev.package.sha3]
 opt-level = 3
 
 [profile.dev.package.salsa20]
@@ -89,4 +109,7 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.zeroize]
+opt-level = 3
+
+[profile.dev.package.num-bigint-dig]
 opt-level = 3

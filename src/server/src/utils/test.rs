@@ -1,7 +1,7 @@
 use crate::App;
 use axum_test::TestServer;
-use capwat_model::instance_settings::InstanceSettings;
-use capwat_postgres::queries::instance_settings::InstanceSettingsPgImpl;
+use capwat_model::instance::InstanceSettings;
+use capwat_postgres::impls::InstanceSettingsPgImpl;
 use capwat_vfs::{backend::InMemoryFs, Vfs};
 use tracing::info;
 

@@ -1,4 +1,4 @@
-use capwat_api_types::e2ee::ClassicKey;
+use capwat_api_types::encrypt::{ClassicKey, ClassicKeyType};
 use std::fmt::Debug;
 
 /// Key pairs for the Curve25519 algorithm.
@@ -61,13 +61,17 @@ impl PublicKey {
     /// [API key]: capwat_api_types::e2ee::ClassicKey
     #[must_use]
     pub fn from_api(key: ClassicKey) -> Option<Self> {
-        match key {
-            ClassicKey::Curve25519(inner) => {
-                let public_key = x25519_dalek::PublicKey::from(inner);
+        match key.as_key_type() {
+            ClassicKeyType::Curve25519 => {
+                assert_eq!(key.as_bytes().len(), ClassicKeyType::CURVE25519_SIZE);
+
+                let sized: [u8; 32] = key.as_bytes().try_into().unwrap();
+                let public_key = x25519_dalek::PublicKey::from(sized);
+
                 Some(Self(public_key))
             }
             #[cfg(not(feature = "server"))]
-            ClassicKey::Unsupported { .. } => None,
+            ClassicKeyType::Unsupported(..) => None,
         }
     }
 
@@ -83,7 +87,7 @@ impl PublicKey {
     /// [`ClassicKey`]: capwat_api_types::e2ee::ClassicKey
     #[must_use]
     pub fn serialize(&self) -> ClassicKey {
-        ClassicKey::Curve25519(self.as_bytes().clone())
+        ClassicKey::new(ClassicKeyType::Curve25519, self.as_bytes()).unwrap()
     }
 }
 
@@ -104,13 +108,17 @@ impl SecretKey {
     /// [API key]: capwat_api_types::e2ee::ClassicKey
     #[must_use]
     pub fn from_api(key: ClassicKey) -> Option<Self> {
-        match key {
-            ClassicKey::Curve25519(inner) => {
-                let secret_key = x25519_dalek::StaticSecret::from(inner);
-                Some(Self(secret_key))
+        match key.as_key_type() {
+            ClassicKeyType::Curve25519 => {
+                assert_eq!(key.as_bytes().len(), ClassicKeyType::CURVE25519_SIZE);
+
+                let sized: [u8; 32] = key.as_bytes().try_into().unwrap();
+                let public_key = x25519_dalek::StaticSecret::from(sized);
+
+                Some(Self(public_key))
             }
             #[cfg(not(feature = "server"))]
-            ClassicKey::Unsupported { .. } => None,
+            ClassicKeyType::Unsupported(..) => None,
         }
     }
 
@@ -124,6 +132,8 @@ impl SecretKey {
     /// be used to deserialize when needed.
     #[must_use]
     pub fn serialize(&self) -> String {
-        ClassicKey::Curve25519(self.as_bytes().clone()).to_string()
+        ClassicKey::new(ClassicKeyType::Curve25519, self.as_bytes())
+            .unwrap()
+            .to_string()
     }
 }

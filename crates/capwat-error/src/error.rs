@@ -169,12 +169,14 @@ where
 }
 
 impl<C: Context> From<C> for Error {
+    #[track_caller]
     fn from(value: C) -> Self {
         Error::unknown_generic(value)
     }
 }
 
 impl<C: Context> From<C> for Error<C> {
+    #[track_caller]
     fn from(value: C) -> Self {
         Error::unknown(value)
     }

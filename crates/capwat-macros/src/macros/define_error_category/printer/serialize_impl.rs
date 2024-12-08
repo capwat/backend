@@ -35,7 +35,6 @@ impl SerializeImpl<'_> {
             }
             Some(InputCategoryData::Subcategories { data, .. }) => {
                 let mut subcategory_tokens = proc_macro2::TokenStream::new();
-
                 for subcategory in data.iter() {
                     let subcategory_ident = &subcategory.ident;
                     let subcode = subcategory.ident.to_string().to_snek_case();
