@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use capwat_error::{ApiErrorCategory, Error, Result};
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl, SimpleAsyncConnection};
+use diesel_async_migrations::EmbeddedMigrations;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::Mutex;
@@ -13,7 +14,7 @@ pub struct TestPool(Option<Arc<TestPoolInner>>);
 
 impl TestPool {
     #[tracing::instrument(name = "db.test_pool.connect")]
-    pub async fn connect() -> Self {
+    pub async fn connect(migrations: &EmbeddedMigrations) -> Self {
         let mut base_url = super::DATABASE_URL.clone();
         base_url.set_path("");
 
@@ -22,7 +23,7 @@ impl TestPool {
         url.set_path(&connect_info.db_name);
 
         let conn = Mutex::new(Self::establish(url.as_ref()).await);
-        crate::migrations::run_pending(&mut PgConnection::Raw(conn.lock().await))
+        crate::migrations::run_pending(&mut PgConnection::Raw(conn.lock().await), migrations)
             .await
             .unwrap();
 

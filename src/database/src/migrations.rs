@@ -10,17 +10,18 @@ use tracing::info;
 use crate::error::MigrationError;
 use crate::pool::PgConnection;
 
-static MIGRATIONS: EmbeddedMigrations = diesel_async_migrations::embed_migrations!();
-
 #[tracing::instrument(skip_all, name = "migrations.run_pending")]
-pub async fn run_pending<'a>(conn: &mut PgConnection<'a>) -> Result<(), MigrationError> {
+pub async fn run_pending<'a>(
+    conn: &mut PgConnection<'a>,
+    migrations: &EmbeddedMigrations,
+) -> Result<(), MigrationError> {
     #[cfg(not(test))]
     let now = Instant::now();
 
     #[cfg(not(test))]
     info!("Performing database migrations... (this may take a while)");
 
-    MIGRATIONS
+    migrations
         .run_pending_migrations(conn.deref_mut())
         .await
         .change_context(MigrationError)?;

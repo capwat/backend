@@ -1,8 +1,6 @@
 #![allow(async_fn_in_trait)]
-
 pub mod error;
 pub mod ext;
-pub mod impls;
 pub mod migrations;
 pub mod pool;
 pub mod transaction;

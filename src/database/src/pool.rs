@@ -7,6 +7,7 @@ use diesel_async::pooled_connection::{
     bb8::PooledConnection, AsyncDieselConnectionManager, ManagerConfig,
 };
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async_migrations::EmbeddedMigrations;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::MutexGuard;
@@ -50,8 +51,8 @@ impl PgPool {
     }
 
     #[tracing::instrument(name = "db.build_for_tests")]
-    pub async fn build_for_tests() -> Self {
-        let pool = crate::test::TestPool::connect().await;
+    pub async fn build_for_tests(migrations: &EmbeddedMigrations) -> Self {
+        let pool = crate::test::TestPool::connect(migrations).await;
         Self(Arc::new(pool))
     }
 

@@ -1,5 +1,5 @@
 [package]
-name = "capwat-postgres"
+name = "capwat-db"
 authors.workspace = true
 version.workspace = true
 edition.workspace = true
@@ -8,7 +8,6 @@ rust-version.workspace = true
 [dependencies]
 capwat-config.workspace = true
 capwat-error.workspace = true
-capwat-model = { workspace = true, features = ["with_diesel"] }
 capwat-utils.workspace = true
 
 async-trait.workspace = true
