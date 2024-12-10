@@ -2,51 +2,46 @@ use capwat_error::{ext::ResultExt, Result};
 use capwat_model::instance::InstanceSettings;
 use capwat_postgres::impls::InstanceSettingsPgImpl;
 use capwat_server::App;
-use capwat_utils::env::load_dotenv;
+use capwat_utils::{env::load_dotenv, future::Retry};
 use capwat_vfs::Vfs;
-use std::net::SocketAddr;
+use futures::TryFutureExt;
+use std::{net::SocketAddr, time::Duration};
+use thiserror::Error;
 use tokio::net::TcpListener;
-use tracing::{info, warn};
+use tracing::{debug, info, warn, Instrument};
 
-fn install_all_error_middlewares() {
-    capwat_postgres::install_error_middleware();
-}
+#[derive(Debug, Error)]
+#[error("Could not start Capwat HTTP server")]
+struct StartError;
 
-async fn setup_instance(app: App) -> Result<()> {
-    let mut conn = app.db_write().await?;
-    InstanceSettings::setup_local(&mut conn).await?;
-    conn.commit().await?;
-
-    let mut conn = app.db_read().await?;
-    let settings = InstanceSettings::get_local(&mut conn).await?;
-    if settings.require_captcha && app.config.hcaptcha.is_none() {
-        warn!("hCaptcha integration is not configured but the instance settings requires CAPTCHA. Please configure hCaptcha or turn off `Require CAPTCHA` in instance settings.");
-    }
-
-    Ok(())
-}
-
-async fn stuff(config: capwat_config::Server, vfs: Vfs) -> Result<()> {
+async fn start_capwat_server(config: capwat_config::Server, vfs: Vfs) -> Result<(), StartError> {
     if !capwat_utils::RELEASE {
-        info!(?config, "Starting Capwat HTTP server with configuration...");
+        info!(?config, "Starting Capwat HTTP server...");
     }
 
-    let app = App::new(config, vfs)?;
+    // Setup the entire instance separately on a different thread...
+    let app = App::new(config, vfs).change_context(StartError)?;
     tokio::spawn({
         let app = app.clone();
-        async move {
-            if let Err(error) = setup_instance(app).await {
-                warn!(%error, "could not setup instance");
-            }
-        }
+        let span = tracing::info_span!("instance.setup");
+        setup_instance(app)
+            .instrument(span.clone())
+            .inspect_err(move |error| {
+                span.in_scope(|| {
+                    warn!(%error, "Could not setup Capwat instance settings");
+                })
+            })
     });
 
+    debug!("binding server");
     let listener = TcpListener::bind((app.config.ip, app.config.port))
         .await
+        .change_context(StartError)
         .attach_printable("could not bind server with address and port")?;
 
     let addr = listener
         .local_addr()
+        .change_context(StartError)
         .attach_printable("could not get socket address of the server")?;
 
     let router = capwat_server::controllers::build_axum_router(app.clone());
@@ -59,64 +54,55 @@ async fn stuff(config: capwat_config::Server, vfs: Vfs) -> Result<()> {
 
     let make_service = router.into_make_service_with_connect_info::<SocketAddr>();
     axum::serve(listener, make_service)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+        .with_graceful_shutdown(capwat_utils::shutdown_signal())
+        .await
+        .change_context(StartError)
+        .attach_printable("could not serve Capwat HTTP service")?;
 
     Ok(())
 }
 
-#[cfg(not(unix))]
-async fn shutdown_signal() {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("failed to install ctrl+c handler");
+async fn setup_instance(app: App) -> Result<()> {
+    debug!("setting up Capwat instance settings...");
+
+    Retry::builder("Setup Capwat instance", || async {
+        let mut conn = app.db_write().await?;
+        InstanceSettings::setup_local(&mut conn).await?;
+
+        let settings = InstanceSettings::get_local(&mut conn).await?;
+        if settings.require_captcha && app.config.hcaptcha.is_none() {
+            warn!("hCaptcha integration is not configured but the instance settings requires CAPTCHA. Please configure hCaptcha or turn off `Require CAPTCHA` in instance settings.");
+        }
+        conn.commit().await?;
+
+        Ok::<_, capwat_error::Error>(())
+    })
+    .max_retries(3)
+    // 30 seconds retry so we don't have to spam database
+    // operations too quickly.
+    .wait(Duration::from_secs(30))
+    .build()
+    .run()
+    .await?;
+
+    Ok(())
 }
 
-#[cfg(unix)]
-async fn shutdown_signal() {
-    use tokio::signal::unix::{signal, SignalKind};
+#[capwat_macros::main]
+fn main() -> Result<(), StartError> {
+    capwat_postgres::install_error_middleware();
 
-    let interrupt = async {
-        signal(SignalKind::interrupt())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
-
-    let terminate = async {
-        signal(SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
-
-    tokio::select! {
-        _ = interrupt => {},
-        _ = terminate => {},
-    }
-}
-
-fn start() -> Result<()> {
     let vfs = Vfs::new_std();
     load_dotenv(&vfs).ok();
 
-    let config = capwat_config::Server::from_maybe_file(&vfs)?;
-    capwat_tracing::init(&config.logging)?;
+    let config = capwat_config::Server::from_maybe_file(&vfs).change_context(StartError)?;
+    capwat_tracing::init(&config.logging).change_context(StartError)?;
 
-    tokio::runtime::Builder::new_multi_thread()
+    let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
+        .worker_threads(config.workers)
         .build()
-        .unwrap()
-        .block_on(stuff(config, vfs))
-}
+        .unwrap();
 
-fn main() -> std::process::ExitCode {
-    install_all_error_middlewares();
-
-    if let Err(error) = start() {
-        eprintln!("{error:#}");
-        std::process::ExitCode::FAILURE
-    } else {
-        std::process::ExitCode::SUCCESS
-    }
+    rt.block_on(start_capwat_server(config, vfs))
 }

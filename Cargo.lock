@@ -622,6 +622,7 @@ dependencies = [
  "capwat-utils",
  "capwat-vfs",
  "chrono",
+ "futures",
  "jsonwebtoken",
  "serde",
  "serde_json",
@@ -665,6 +666,7 @@ dependencies = [
  "static_assertions",
  "thiserror 2.0.3",
  "tokio",
+ "tracing",
  "zeroize",
 ]
 

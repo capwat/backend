@@ -16,6 +16,12 @@ use crate::App;
 
 type ApiResult<T> = std::result::Result<T, ApiError>;
 
+/// This object allows to extract identity based on the token given
+/// from the `Authorization` HTTP header.
+///
+/// There are kinds of identities that this object supports:
+/// - `Guest` - They haven't provided a token yet.
+/// - `User` - Regular user in a Capwat instance.
 pub enum Identity {
     Guest,
     User(User),

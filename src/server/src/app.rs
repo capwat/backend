@@ -88,7 +88,7 @@ impl App {
             let mut buffer = String::with_capacity(rsa::BITS);
             let now = Instant::now();
 
-            debug!("Reading JWT private key file...");
+            debug!("reading JWT private key file...");
             let mut file = OpenOptions::new()
                 .create(true)
                 .truncate(false)
@@ -105,14 +105,14 @@ impl App {
                 file.write_all(new_priv_key.to_pkcs1_pem(rsa::LineEnding::LF)?.as_bytes())?;
 
                 info!(
-                    "Created JWT private key file: {}",
+                    "created JWT private key file: {}",
                     config.private_key_file.display()
                 );
                 new_priv_key
             };
 
             let elapsed = now.elapsed();
-            debug!(?elapsed, "Reading JWT private key file done");
+            debug!(?elapsed, "reading JWT private key file done");
 
             Ok(rsa_key)
         }

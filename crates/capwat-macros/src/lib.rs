@@ -15,25 +15,14 @@ pub fn define_error_category(input: TokenStream) -> TokenStream {
     .into()
 }
 
-// #[proc_macro_derive(ErrorSubcategory, attributes(category))]
-// pub fn capwat_error_category_subcode(input: TokenStream) -> TokenStream {
-//     let input = parse_macro_input!(input as DeriveInput);
-//     match self::derive::error_subcategory::expand(input) {
-//         Ok(okay) => okay,
-//         Err(error) => error.into_compile_error(),
-//     }
-//     .into()
-// }
-
-// #[proc_macro_attribute]
-// pub fn capwat_error_category(_args: TokenStream, input: TokenStream) -> TokenStream {
-//     let input = parse_macro_input!(input as DeriveInput);
-//     match self::attrs::error_category::expand(input) {
-//         Ok(okay) => okay,
-//         Err(error) => error.into_compile_error(),
-//     }
-//     .into()
-// }
+#[proc_macro_attribute]
+pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
+    match self::attrs::main::apply(item.into()) {
+        Ok(okay) => okay,
+        Err(error) => error.into_compile_error(),
+    }
+    .into()
+}
 
 #[proc_macro_derive(ConfigParts, attributes(config))]
 pub fn config_parts_derive(input: TokenStream) -> TokenStream {

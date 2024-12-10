@@ -2,6 +2,7 @@ mod protected_string;
 
 pub mod cache;
 pub mod env;
+pub mod future;
 pub mod serde_exts;
 
 /// This value determines whether it was compiled in release mode
@@ -28,6 +29,38 @@ pub fn is_running_in_docker(vfs: &Vfs) -> bool {
         .unwrap_or_default();
 
     vfs.exists("/.dockerenv") || vfs.exists("/run/.containerenv") || proc_1_group || proc_mount
+}
+
+/// This function yields the current thread until one of the exit
+/// signals listed depending on the operating system that a host
+/// machine is running on is triggered.
+///
+/// It allows programs to implement graceful shutdown to prevent
+/// from any data loss or unexpected behavior to the server.
+///
+/// **Signals**:
+/// - **For Windows / unsupported platforms**: It detects if `CTRL+C` is triggered
+///
+/// - **For Unix systems**: It detects whether `SIGINT` or `SIGTERM` is triggered
+pub async fn shutdown_signal() {
+    #[cfg(not(unix))]
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install CTRL+C signal handler");
+
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+
+        let mut sigint = signal(SignalKind::interrupt()).expect("failed to install SIGINT handler");
+        let mut sigterm =
+            signal(SignalKind::terminate()).expect("failed to install SIGTERM handler");
+
+        tokio::select! {
+            _ = sigint.recv() => {},
+            _ = sigterm.recv() => {},
+        };
+    }
 }
 
 pub mod time {

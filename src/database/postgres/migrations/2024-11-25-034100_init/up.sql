@@ -55,7 +55,6 @@ CREATE TABLE instance_settings (
     updated TIMESTAMP
 );
 
-
 -- A collection of user keys that were created since registration
 -- or throughout the running of this instance. Users' keys will be
 -- renewed every month (key rotation).
