@@ -9,6 +9,7 @@ rust-version.workspace = true
 capwat-api-types    = { workspace = true, features = ["server"] }
 capwat-config       = { workspace = true }
 capwat-crypto       = { workspace = true, features = ["server"] }
+capwat-db           = { workspace = true }
 capwat-error        = { workspace = true, features = ["server"] }
 capwat-macros       = { workspace = true }
 capwat-model        = { workspace = true }
@@ -16,8 +17,8 @@ capwat-tracing      = { workspace = true }
 capwat-vfs          = { workspace = true }
 capwat-utils        = { workspace = true }
 
-capwat-postgres     = { workspace = true }
-
+bitflags.workspace           = true
+bon.workspace                = true
 chrono.workspace             = true
 futures.workspace            = true
 serde.workspace              = true
@@ -28,14 +29,15 @@ tracing.workspace            = true
 tracing-subscriber.workspace = true
 uuid.workspace               = true
 
-bytes = "1.9.0"
+bytes        = "1.9.0"
+jsonwebtoken = "9.3.0"
+validator    = "0.19.0"
 
 # http crates
 axum            = { workspace = true }
 axum-client-ip  = "0.6.1"
 axum-extra      = { version = "0.9.4", features = ["typed-header"] }
 tower           = "0.5.1"
-jsonwebtoken = "9.3.0"
 
 [dependencies.tower-http]
 version = "0.6.1"
@@ -52,4 +54,5 @@ features = [
 
 [dev-dependencies]
 axum-test = "16.4.0"
+assert-json-diff = "*"
 static_assertions.workspace = true

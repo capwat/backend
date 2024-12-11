@@ -1,6 +1,5 @@
 use capwat_error::{ext::ResultExt, Result};
 use capwat_model::instance::InstanceSettings;
-use capwat_postgres::impls::InstanceSettingsPgImpl;
 use capwat_server::App;
 use capwat_utils::{env::load_dotenv, future::Retry};
 use capwat_vfs::Vfs;
@@ -14,6 +13,7 @@ use tracing::{debug, info, warn, Instrument};
 #[error("Could not start Capwat HTTP server")]
 struct StartError;
 
+#[tracing::instrument(skip_all, name = "server.run")]
 async fn start_capwat_server(config: capwat_config::Server, vfs: Vfs) -> Result<(), StartError> {
     if !capwat_utils::RELEASE {
         info!(?config, "Starting Capwat HTTP server...");
@@ -44,17 +44,22 @@ async fn start_capwat_server(config: capwat_config::Server, vfs: Vfs) -> Result<
         .change_context(StartError)
         .attach_printable("could not get socket address of the server")?;
 
-    let router = capwat_server::controllers::build_axum_router(app.clone());
-    let router = capwat_server::middleware::apply(router);
+    let make_service = capwat_server::build_axum_router(app.clone())
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     info!(
         "Capwat HTTP server is listening at http://{addr} with {} workers",
         app.config.workers
     );
 
-    let make_service = router.into_make_service_with_connect_info::<SocketAddr>();
     axum::serve(listener, make_service)
-        .with_graceful_shutdown(capwat_utils::shutdown_signal())
+        .with_graceful_shutdown(
+            async {
+                capwat_utils::shutdown_signal().await;
+                info!("Received graceful shutdown signal. Shutting down server...");
+            }
+            .instrument(tracing::Span::current()),
+        )
         .await
         .change_context(StartError)
         .attach_printable("could not serve Capwat HTTP service")?;
@@ -90,7 +95,7 @@ async fn setup_instance(app: App) -> Result<()> {
 
 #[capwat_macros::main]
 fn main() -> Result<(), StartError> {
-    capwat_postgres::install_error_middleware();
+    capwat_db::install_error_middleware();
 
     let vfs = Vfs::new_std();
     load_dotenv(&vfs).ok();

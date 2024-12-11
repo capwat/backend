@@ -1,4 +1,5 @@
 mod protected_string;
+mod sensitive;
 
 pub mod cache;
 pub mod env;
@@ -10,7 +11,7 @@ pub mod serde_exts;
 pub const RELEASE: bool = cfg!(release);
 
 pub use self::protected_string::ProtectedString;
-pub use capwat_api_types::util::Sensitive;
+pub use self::sensitive::Sensitive;
 
 //////////////////////////////////////////////////////
 use capwat_vfs::Vfs;

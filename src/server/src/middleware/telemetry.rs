@@ -10,7 +10,7 @@ use tower_http::request_id::{MakeRequestId, RequestId, SetRequestIdLayer};
 use tracing::{debug, Instrument};
 use uuid::Uuid;
 
-use crate::headers::XRequestId;
+use crate::util::headers::XRequestId;
 
 #[doc(hidden)]
 #[derive(Default, Clone)]

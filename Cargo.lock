@@ -541,6 +541,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "capwat-db"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bb8",
+ "capwat-config",
+ "capwat-crypto",
+ "capwat-error",
+ "capwat-macros",
+ "capwat-tracing",
+ "capwat-utils",
+ "capwat-vfs",
+ "chrono",
+ "diesel",
+ "diesel-async",
+ "diesel_async_migrations",
+ "futures",
+ "rustls",
+ "rustls-native-certs",
+ "thiserror 2.0.3",
+ "tokio",
+ "tokio-postgres",
+ "tokio-postgres-rustls",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "capwat-error"
 version = "0.1.0"
 dependencies = [
@@ -566,58 +594,39 @@ version = "0.1.0"
 dependencies = [
  "bon",
  "capwat-api-types",
- "chrono",
- "diesel",
- "diesel-derive-enum",
- "diesel-derive-newtype",
- "serde",
-]
-
-[[package]]
-name = "capwat-postgres"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bb8",
- "capwat-config",
- "capwat-crypto",
+ "capwat-db",
  "capwat-error",
- "capwat-macros",
- "capwat-model",
- "capwat-tracing",
  "capwat-utils",
- "capwat-vfs",
  "chrono",
  "diesel",
  "diesel-async",
+ "diesel-derive-enum",
+ "diesel-derive-newtype",
  "diesel_async_migrations",
- "futures",
- "rustls",
- "rustls-native-certs",
+ "serde",
  "thiserror 2.0.3",
- "tokio",
- "tokio-postgres",
- "tokio-postgres-rustls",
  "tracing",
- "url",
 ]
 
 [[package]]
 name = "capwat-server"
 version = "0.1.0"
 dependencies = [
+ "assert-json-diff",
  "axum",
  "axum-client-ip",
  "axum-extra",
  "axum-test",
+ "bitflags",
+ "bon",
  "bytes",
  "capwat-api-types",
  "capwat-config",
  "capwat-crypto",
+ "capwat-db",
  "capwat-error",
  "capwat-macros",
  "capwat-model",
- "capwat-postgres",
  "capwat-tracing",
  "capwat-utils",
  "capwat-vfs",
@@ -634,6 +643,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "validator",
 ]
 
 [[package]]
@@ -1280,9 +1290,9 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "fastrand"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "486f806e73c5707928240ddc295403b1b93c96a02038563881c4a2fd84b81ac4"
+checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "fiat-crypto"
@@ -2754,15 +2764,15 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.41"
+version = "0.38.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7f649912bc1495e167a6edee79151c84b1bad49748cb4f1f1167f459f6224f6"
+checksum = "f93dc38ecbab2eb790ff964bb77fa94faf256fd3e73285fd7ba0903b76bedb85"
 dependencies = [
  "bitflags",
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3749,6 +3759,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "validator"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0b4a29d8709210980a09379f27ee31549b73292c87ab9899beee1c0d3be6303"
+dependencies = [
+ "idna",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "url",
 ]
 
 [[package]]

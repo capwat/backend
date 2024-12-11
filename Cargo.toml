@@ -2,7 +2,7 @@
 members = [
     "crates/*",
     "src/config",
-    "src/database/*",
+    "src/database",
     "src/model",
     "src/server",
     "src/tracing",
@@ -28,7 +28,7 @@ capwat-utils        = { path = "crates/capwat-utils" }
 capwat-vfs          = { path = "crates/capwat-vfs" }
 
 capwat-config       = { path = "src/config" }
-capwat-postgres     = { path = "src/database/postgres" }
+capwat-db           = { path = "src/database" }
 capwat-model        = { path = "src/model" }
 capwat-tracing      = { path = "src/tracing" }
 

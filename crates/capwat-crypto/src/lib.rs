@@ -15,7 +15,6 @@ pub use capwat_error::{Error, Result};
 pub mod aead;
 #[cfg(feature = "server")]
 pub mod argon2;
-pub mod curve25519;
 pub mod derive;
 pub mod rsa;
 

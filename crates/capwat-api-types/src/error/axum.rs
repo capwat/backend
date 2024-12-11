@@ -20,6 +20,7 @@ impl IntoResponse for Error {
             ErrorCategory::AccessDenied => StatusCode::UNAUTHORIZED,
             ErrorCategory::KeysExpired => StatusCode::FORBIDDEN,
             ErrorCategory::ExpiredToken => StatusCode::FORBIDDEN,
+            ErrorCategory::NotFound => StatusCode::NOT_FOUND,
             // As prescribed from the documentation
             ErrorCategory::NoEmailAddress => StatusCode::FORBIDDEN,
             ErrorCategory::RegisterUserFailed(..) => StatusCode::BAD_REQUEST,

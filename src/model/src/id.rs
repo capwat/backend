@@ -1,12 +1,10 @@
-#[cfg(feature = "with_diesel")]
 use diesel_derive_newtype::DieselNewType;
 
 macro_rules! newtypes {
     {
         $( $Ident:ident: $ty:ty, )*
     } => {$(
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-        #[cfg_attr(feature = "with_diesel", derive(DieselNewType))]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, DieselNewType)]
         pub struct $Ident(pub $ty);
 
         impl From<$ty> for $Ident {

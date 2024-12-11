@@ -30,6 +30,9 @@ capwat_macros::define_error_category! {
         /// requires you to do that. Please comply before using the service.
         NoEmailAddress,
 
+        /// Specific resource cannot be found.
+        NotFound,
+
         /// You cannot or don't have a permission to access a specific resource.
         AccessDenied,
 

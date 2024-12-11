@@ -5,7 +5,7 @@ use thiserror::Error;
 use tracing::error;
 
 #[derive(Debug, Error)]
-#[error("Service got panicked")]
+#[error("Route controller got panicked")]
 struct Panicked;
 
 #[tracing::instrument(skip_all, name = "middleware.catch_panic")]

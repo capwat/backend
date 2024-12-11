@@ -201,6 +201,8 @@ impl<C> Error<C> {
                 ApiError::new(ErrorCategory::Outage)
                     .message("Capwat is not available at the moment. Please try again later.")
             }),
+            ErrorCategory::AccessDenied => ApiError::new(ErrorCategory::AccessDenied),
+            ErrorCategory::NotFound => ApiError::new(ErrorCategory::NotFound),
             cat => panic!("unhandled category: {cat:?}"),
         }
     }

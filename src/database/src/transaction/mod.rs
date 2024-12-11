@@ -4,6 +4,7 @@ use diesel::pg::Pg;
 use diesel::query_builder::{QueryBuilder, QueryFragment};
 use diesel_async::{AnsiTransactionManager, AsyncPgConnection, TransactionManager};
 use std::ops::DerefMut;
+use tracing::trace;
 
 use crate::{
     error::{BeginTransactError, CommitTransactError, RollbackTransactError},
@@ -30,7 +31,6 @@ impl<'a> Transaction<'a> {
         let sql = query_builder.finish();
 
         let mut conn = builder.connection;
-
         AnsiTransactionManager::begin_transaction_sql(&mut *conn, &sql)
             .await
             .change_context(BeginTransactError)
@@ -45,11 +45,13 @@ impl<'a> Transaction<'a> {
 
     #[tracing::instrument(skip(self), name = "db.transaction.commit")]
     pub async fn commit(mut self) -> Result<(), CommitTransactError> {
+        trace!("commiting transaction...");
         let mut conn = self.connection.take().expect("self.connection is dropped");
         AnsiTransactionManager::commit_transaction(conn.deref_mut())
             .await
             .change_context(CommitTransactError)?;
 
+        trace!("commiting done");
         Ok(())
     }
 

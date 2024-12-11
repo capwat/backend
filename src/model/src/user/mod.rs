@@ -1,15 +1,11 @@
 use bon::Builder;
 use chrono::NaiveDateTime;
+use diesel::{AsChangeset, Queryable, Selectable};
 
 use crate::id::UserId;
-use crate::key::KeyRotationFrequency;
 
-mod keys;
-pub use self::keys::*;
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "with_diesel", derive(diesel::Queryable, diesel::Selectable))]
-#[cfg_attr(feature = "with_diesel", diesel(table_name = crate::diesel::schema::users))]
+#[derive(Debug, Clone, Queryable, Selectable)]
+#[diesel(table_name = crate::postgres::schema::users)]
 pub struct User {
     pub id: UserId,
     pub created: NaiveDateTime,
@@ -17,7 +13,6 @@ pub struct User {
 
     pub admin: bool,
     pub display_name: Option<String>,
-    pub key_rotation_frequency: KeyRotationFrequency,
 
     pub email: Option<String>,
     pub email_verified: bool,
@@ -37,15 +32,10 @@ pub struct InsertUser<'a> {
     pub access_key_hash: &'a str,
     pub encrypted_symmetric_key: &'a str,
     pub salt: &'a str,
-
-    pub public_key: &'a str,
-    pub encrypted_secret_key: &'a str,
-    pub key_rotation_frequency: Option<KeyRotationFrequency>,
 }
 
-#[derive(Builder)]
-#[cfg_attr(feature = "with_diesel", derive(diesel::AsChangeset))]
-#[cfg_attr(feature = "with_diesel", diesel(table_name = crate::diesel::schema::users))]
+#[derive(Builder, AsChangeset)]
+#[diesel(table_name = crate::postgres::schema::users)]
 pub struct UpdateUser<'a> {
     #[builder(into)]
     pub id: UserId,

@@ -5,6 +5,7 @@ use axum::response::{IntoResponse, Response};
 use bytes::{BufMut, BytesMut};
 use capwat_error::{ApiError, ApiErrorCategory, Error};
 use thiserror::Error;
+use tracing::warn;
 
 /// Local version of [`axum::Json`] but it makes an HTTP response based
 /// on Capwat API's error schema if it fails to deserialize an object.
@@ -57,7 +58,7 @@ where
                     AxumError::MissingJsonContentType(..) => "Invalid content type".to_string(),
                     AxumError::BytesRejection(bytes_rejection) => bytes_rejection.body_text(),
                     inner => {
-                        tracing::warn!("unhandled JsonRejection category: {inner:?}");
+                        warn!("unhandled axum::JsonRejection category: {inner:?}");
                         return Err(Error::unknown_generic(inner)
                             .into_api_error()
                             .into_response());
