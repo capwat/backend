@@ -7,7 +7,7 @@ rust-version.workspace = true
 
 [features]
 experimental = []
-server = ["axum", "bon"]
+server = ["axum", "bon", "tracing"]
 
 [dependencies]
 base64.workspace = true
@@ -23,6 +23,7 @@ thiserror.workspace = true
 # this is intentional as we might use this for testing
 axum = { workspace = true, optional = true }
 bon = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_test = "1.0.177"

@@ -1,4 +1,5 @@
 #![allow(async_fn_in_trait)]
+#![feature(once_cell_try_insert)]
 pub mod error;
 pub mod ext;
 pub mod migrations;
@@ -15,6 +16,7 @@ use self::error::ConnectError;
 use capwat_error::ext::{NoContextResultExt, ResultExt};
 use capwat_error::{ApiErrorCategory, Error, Result};
 use diesel_async::{AsyncConnection, AsyncPgConnection};
+use std::sync::OnceLock;
 use url::Url;
 
 /// Installs [`capwat_error`] middleware for types [`diesel::result::Error`]
@@ -22,6 +24,13 @@ use url::Url;
 pub fn install_error_middleware() {
     use capwat_error::middleware::impls::Report;
     use diesel::result::{DatabaseErrorKind, Error as DieselError};
+
+    // it happens when i tried to test something...
+    static IS_INSTALLED: OnceLock<()> = OnceLock::new();
+    if IS_INSTALLED.get().is_some() {
+        return;
+    }
+    let _ = IS_INSTALLED.set(());
 
     Error::install_middleware::<DieselError>(|error, location, category| {
         match &error {
@@ -31,6 +40,9 @@ pub fn install_error_middleware() {
             }
             DieselError::DatabaseError(DatabaseErrorKind::ReadOnlyTransaction, ..) => {
                 *category = ApiErrorCategory::ReadonlyMode;
+            }
+            DieselError::NotFound => {
+                *category = ApiErrorCategory::NotFound;
             }
             _ => {}
         };

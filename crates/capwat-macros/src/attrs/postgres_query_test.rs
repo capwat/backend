@@ -16,6 +16,7 @@ pub fn apply(tokens: TokenStream) -> syn::Result<TokenStream> {
     input.sig.ident = inner_ident.clone();
 
     Ok(quote! {
+        #[tracing::instrument]
         #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
         async fn #test_ident() {
             let vfs = ::capwat_vfs::Vfs::new_std();

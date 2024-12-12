@@ -1,6 +1,8 @@
-use std::sync::{atomic::AtomicBool, LazyLock};
+use std::sync::{atomic::AtomicBool, LazyLock, OnceLock};
 use tracing::warn;
 use url::Url;
+
+use crate::PgPool;
 
 mod pool;
 mod schema;
@@ -8,6 +10,11 @@ mod schema;
 pub use self::pool::TestPool;
 
 static DO_CLEANUP: AtomicBool = AtomicBool::new(true);
+
+// This is conflicting at first to use PgPool as our pool but
+// it will make sense soon as to why is that so.
+static MASTER_POOL: OnceLock<PgPool> = OnceLock::new();
+
 static DATABASE_URL: LazyLock<Url> = LazyLock::new(|| {
     let result = capwat_utils::env::var_opt_parsed::<Url>("CAPWAT_DB_PRIMARY_URL")
         .transpose()

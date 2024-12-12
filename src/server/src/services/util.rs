@@ -1,5 +1,36 @@
+use capwat_api_types::error::category::PublishPostFailed;
 use capwat_error::{ApiError, ApiErrorCategory};
 use capwat_model::{InstanceSettings, User};
+
+/// Checks the content of the public post.
+pub fn check_post_content(
+    _user: &User,
+    settings: &InstanceSettings,
+    content: &str,
+) -> Result<(), ApiError> {
+    // There are set of requirements of what makes an approriate post
+    // on the server side (not on the moderator's side).
+    //
+    // The content of a post must not be empty or more the characters
+    // set by the instance administrator.
+    if content.is_empty() {
+        return Err(ApiError::new(ApiErrorCategory::PublishPostFailed(
+            PublishPostFailed::EmptyContent,
+        )));
+    }
+
+    // Now, this is getting wild. We'll going to refer characters as how
+    // many bytes are there in a single content byte array.
+    if content.as_bytes().len() > settings.post_max_characters as usize {
+        let message = "Too many characters!";
+        return Err(ApiError::new(ApiErrorCategory::PublishPostFailed(
+            PublishPostFailed::TooManyCharacters,
+        ))
+        .message(message));
+    }
+
+    Ok(())
+}
 
 /// Checks whether a user is an administrator of a Capwat instance.
 pub fn check_if_admin(user: &User) -> Result<(), ApiError> {

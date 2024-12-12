@@ -1,15 +1,18 @@
 use axum::extract::{FromRequestParts, Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
+use axum_extra::either::Either;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use capwat_db::pool::PgConnection;
 use capwat_error::ext::ResultExt;
 use capwat_error::Result;
 use capwat_model::id::UserId;
 
 use crate::auth::jwt::LoginClaims;
-use crate::extract::SessionUser;
+use crate::extract::{LocalInstanceSettings, SessionUser};
+use crate::services::util::check_email_status;
 use crate::App;
 
 #[doc(hidden)]
@@ -22,24 +25,55 @@ pub struct Metadata {
 pub async fn catch_token(
     metadata: Metadata,
     app: State<App>,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
-    if let Some(header) = metadata.auth_header {
-        let user = match get_user_from_token(&app, header.token()).await {
-            Ok(data) => data,
+    let request = if let Some(header) = metadata.auth_header {
+        match process_user_token(&app, request, header.token()).await {
+            Ok(Either::E1(request)) => request,
+            Ok(Either::E2(response)) => return response,
             Err(error) => return error.into_api_error().into_response(),
-        };
-        request.extensions_mut().insert(user);
+        }
+    } else {
+        request
     };
     next.run(request).await
 }
 
-async fn get_user_from_token(app: &App, token: &str) -> Result<SessionUser> {
-    let claims = LoginClaims::decode(&app, token)?;
-
+async fn process_user_token(
+    app: &App,
+    request: Request,
+    token: &str,
+) -> Result<Either<Request, Response>> {
     let mut conn = app.db_read().await?;
-    SessionUser::from_db(&mut conn, UserId(claims.sub))
+    let user = get_user_from_token(&mut conn, app, token).await?;
+
+    drop(conn);
+
+    let (mut parts, body) = request.into_parts();
+    let settings = match LocalInstanceSettings::from_request_parts(&mut parts, app).await {
+        Ok(settings) => settings,
+        Err(error) => return Ok(Either::E2(error.into_response())),
+    };
+
+    match check_email_status(&user, &settings) {
+        Ok(..) => {}
+        Err(error) => return Ok(Either::E2(error.into_response())),
+    };
+
+    let mut request = Request::from_parts(parts, body);
+    request.extensions_mut().insert(user);
+
+    Ok(Either::E1(request))
+}
+
+async fn get_user_from_token(
+    conn: &mut PgConnection<'_>,
+    app: &App,
+    token: &str,
+) -> Result<SessionUser> {
+    let claims = LoginClaims::decode(&app, token)?;
+    SessionUser::from_db(conn, UserId(claims.sub))
         .await
         .erase_context()
 }

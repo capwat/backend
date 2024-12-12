@@ -90,7 +90,6 @@ impl App {
             let now = Instant::now();
 
             debug!("reading JWT private key file...");
-
             if !vfs.is_using_std_backend() {
                 // generate automatically then.
                 let new_priv = rsa::generate_keypair()?.1;
@@ -127,8 +126,16 @@ impl App {
             Ok(rsa_key)
         }
 
+        // Because generating RSA keys can be slow from performing units, we'll just
+        // have to create it from scratch at the expense of having that file :)
+        let default_vfs = if cfg!(test) {
+            Vfs::new_std()
+        } else {
+            vfs.clone()
+        };
+
         let jwt = &config.auth.jwt;
-        let priv_key = read_jwt_priv_key_file(jwt, vfs)
+        let priv_key = read_jwt_priv_key_file(jwt, &default_vfs)
             .attach_printable("could not generate JWT key files")?;
 
         let priv_key_buffer = priv_key.to_pkcs1_pem(rsa::LineEnding::LF)?;

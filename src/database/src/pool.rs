@@ -10,7 +10,6 @@ use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use diesel_async_migrations::EmbeddedMigrations;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::MutexGuard;
 use tracing::warn;
 
 use crate::error::{AcquireError, BeginTransactError};
@@ -18,7 +17,7 @@ use crate::internal::AnyPool;
 use crate::transaction::{Transaction, TransactionBuilder};
 
 #[derive(Clone)]
-pub struct PgPool(Arc<dyn AnyPool>);
+pub struct PgPool(pub(crate) Arc<dyn AnyPool>);
 
 impl PgPool {
     #[tracing::instrument(skip_all)]
@@ -50,7 +49,7 @@ impl PgPool {
         Self(Arc::new(pool))
     }
 
-    #[tracing::instrument(name = "db.build_for_tests")]
+    #[tracing::instrument(skip_all, name = "db.build_for_tests")]
     pub async fn build_for_tests(migrations: &EmbeddedMigrations) -> Self {
         let pool = crate::test::TestPool::connect(migrations).await;
         Self(Arc::new(pool))
@@ -124,7 +123,7 @@ impl std::fmt::Debug for PgPool {
 /// or directly from [`AsyncPgConnection`].
 pub enum PgConnection<'a> {
     Pooled(PooledConnection<'static, AsyncPgConnection>),
-    Raw(MutexGuard<'a, AsyncPgConnection>),
+    Raw(&'a mut AsyncPgConnection),
 }
 
 impl std::ops::Deref for PgConnection<'_> {

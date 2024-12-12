@@ -101,11 +101,12 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::util::test::AsJsonResponse;
+    use crate::test_utils::{self, TestResultExt};
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_register() {
-        let (app, settings) = crate::util::test::build_test_app().await;
+        let (app, settings) = test_utils::build_test_app().await;
         let alice_params = capwat_crypto::client::generate_register_user_params(b"alice");
 
         let request = Register {
@@ -125,10 +126,11 @@ mod tests {
             .is_some());
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_email_is_taken() {
-        let (app, settings) = crate::util::test::build_test_app().await;
-        let _ = crate::util::test::init_test_user()
+        let (app, settings) = test_utils::build_test_app().await;
+        let _ = test_utils::users::register()
             .name("alice")
             .email("alice@example.com")
             .app(&app)
@@ -145,7 +147,7 @@ mod tests {
         };
 
         let settings = LocalInstanceSettings::new(settings);
-        let error = request.perform(&app, &settings).await.as_json_error();
+        let error = request.perform(&app, &settings).await.expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -156,10 +158,11 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_username_is_taken() {
-        let (app, settings) = crate::util::test::build_test_app().await;
-        let _ = crate::util::test::init_test_user()
+        let (app, settings) = test_utils::build_test_app().await;
+        let _ = test_utils::users::register()
             .name("alice")
             .app(&app)
             .call()
@@ -175,7 +178,7 @@ mod tests {
         };
 
         let settings = LocalInstanceSettings::new(settings);
-        let error = request.perform(&app, &settings).await.as_json_error();
+        let error = request.perform(&app, &settings).await.expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -186,9 +189,10 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_email_is_not_present_but_required() {
-        let (app, _) = crate::util::test::build_test_app().await;
+        let (app, _) = test_utils::build_test_app().await;
         let alice_params = capwat_crypto::client::generate_register_user_params(b"alice");
 
         let request = Register {
@@ -205,7 +209,7 @@ mod tests {
                 .build(),
         );
 
-        let error = request.perform(&app, &settings).await.as_json_error();
+        let error = request.perform(&app, &settings).await.expect_error_json();
         assert_json_include!(
             actual: error,
             expected: json!({
@@ -215,9 +219,10 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_registration_is_closed() {
-        let (app, _) = crate::util::test::build_test_app().await;
+        let (app, _) = test_utils::build_test_app().await;
         let alice_params = capwat_crypto::client::generate_register_user_params(b"alice");
 
         let request = Register {
@@ -234,7 +239,7 @@ mod tests {
                 .build(),
         );
 
-        let error = request.perform(&app, &settings).await.as_json_error();
+        let error = request.perform(&app, &settings).await.expect_error_json();
         assert_json_include!(
             actual: error,
             expected: json!({
@@ -244,9 +249,10 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_invalid_username() {
-        let (app, settings) = crate::util::test::build_test_app().await;
+        let (app, settings) = test_utils::build_test_app().await;
         let alice_params = capwat_crypto::client::generate_register_user_params(b"alice");
 
         let request = Register {
@@ -260,7 +266,7 @@ mod tests {
         let error = request
             .perform(&app, &LocalInstanceSettings::new(settings))
             .await
-            .as_json_error();
+            .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -271,9 +277,10 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_invalid_email() {
-        let (app, settings) = crate::util::test::build_test_app().await;
+        let (app, settings) = test_utils::build_test_app().await;
         let alice_params = capwat_crypto::client::generate_register_user_params(b"alice");
 
         let request = Register {
@@ -287,7 +294,7 @@ mod tests {
         let error = request
             .perform(&app, &LocalInstanceSettings::new(settings))
             .await
-            .as_json_error();
+            .expect_error_json();
 
         assert_json_include!(
             actual: error,

@@ -8,8 +8,10 @@ use capwat_utils::Sensitive;
 use crate::extract::{Json, LocalInstanceSettings, SessionUser};
 use crate::{services, App};
 
+pub mod profile;
+
 pub async fn local_profile(user: SessionUser) -> Result<Response, ApiError> {
-    let user = services::users::LocalProfile
+    let user = services::users::profile::LocalProfile
         .perform(user)
         .await
         .user
@@ -71,20 +73,25 @@ pub async fn register(
 
 #[cfg(test)]
 mod tests {
-    use crate::util::test as util;
+    use crate::test_utils;
 
     mod login {
         use super::*;
         use capwat_api_types::routes::users::LoginUser;
 
+        #[tracing::instrument]
         #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
         async fn should_login_user() {
-            let (server, app, _) = util::build_test_server().await;
-            let user = util::init_test_user().app(&app).name("alice").call().await;
+            let (server, app, _) = test_utils::build_test_server().await;
+            let credientials = test_utils::users::register()
+                .app(&app)
+                .name("alice")
+                .call()
+                .await;
 
             let request = LoginUser::builder()
                 .name_or_email("alice")
-                .access_key_hash(user.params.access_key_hash)
+                .access_key_hash(credientials.access_key_hash)
                 .build();
 
             let response = server.post("/api/v1/users/login").json(&request).await;

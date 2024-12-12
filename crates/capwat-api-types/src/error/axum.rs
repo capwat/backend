@@ -25,6 +25,7 @@ impl IntoResponse for Error {
             ErrorCategory::NoEmailAddress => StatusCode::FORBIDDEN,
             ErrorCategory::RegisterUserFailed(..) => StatusCode::BAD_REQUEST,
             ErrorCategory::EmailVerificationRequired => StatusCode::FORBIDDEN,
+            ErrorCategory::PublishPostFailed(..) => StatusCode::BAD_REQUEST,
             ErrorCategory::Other(..) => panic!("other error category should not be handled here!"),
         };
         (status_code, Json(self)).into_response()

@@ -35,7 +35,8 @@ impl InstanceSettings {
         diesel::insert_into(instance_settings::table)
             .values(instance_settings::id.eq(0))
             .on_conflict(instance_settings::id)
-            .do_nothing()
+            .do_update()
+            .set(instance_settings::id.eq(0))
             .returning(instance_settings::all_columns)
             .get_result(&mut *conn)
             .await

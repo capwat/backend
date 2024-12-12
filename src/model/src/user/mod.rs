@@ -4,6 +4,9 @@ use diesel::{AsChangeset, Queryable, Selectable};
 
 use crate::id::UserId;
 
+mod follower;
+pub use self::follower::*;
+
 #[derive(Debug, Clone, Queryable, Selectable)]
 #[diesel(table_name = crate::postgres::schema::users)]
 pub struct User {

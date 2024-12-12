@@ -36,6 +36,9 @@ CREATE TABLE instance_settings (
     id SERIAL PRIMARY KEY,
     created TIMESTAMP NOT NULL DEFAULT now(),
 
+    -- Post related options --
+    post_max_characters INT NOT NULL DEFAULT 200 CHECK (post_max_characters > 0),
+
     -- Registration options --
     registration_mode REGISTRATION_MODE NOT NULL DEFAULT 'open',
     require_email_registration BOOLEAN NOT NULL DEFAULT false,
@@ -46,3 +49,22 @@ CREATE TABLE instance_settings (
 
     updated TIMESTAMP
 );
+
+CREATE TABLE followers (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    created TIMESTAMP NOT NULL DEFAULT now(),
+    source_id BIGINT NOT NULL REFERENCES users(id),
+    target_id BIGINT NOT NULL REFERENCES users(id),
+
+    UNIQUE (source_id, target_id),
+    CHECK (source_id != target_id)
+);
+
+CREATE TABLE posts (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    created TIMESTAMP NOT NULL DEFAULT now(),
+    author_id BIGINT NOT NULL REFERENCES users(id),
+    content TEXT NOT NULL,
+    updated TIMESTAMP
+);
+

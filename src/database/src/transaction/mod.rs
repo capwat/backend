@@ -90,7 +90,7 @@ async fn try_rollback<T: DerefMut<Target = AsyncPgConnection>>(mut conn: T) {
         .await
         .change_context(RollbackTransactError)
     {
-        tracing::error!(?error, "Failed to rollback transaction");
+        tracing::error!(%error, "Failed to rollback transaction");
     }
 }
 
@@ -109,11 +109,7 @@ impl Drop for Transaction<'_> {
             // I mean it's impossible to have some kind of pooled
             // connection in testing suite but who cares anyway :)
             PgConnection::Pooled(conn) => {
-                if self.is_testing_connection {
-                    unimplemented!()
-                } else {
-                    tokio::spawn(try_rollback(conn));
-                }
+                tokio::spawn(try_rollback(conn));
             }
             PgConnection::Raw(conn) => tokio::task::block_in_place(|| {
                 futures::executor::block_on(try_rollback(conn));

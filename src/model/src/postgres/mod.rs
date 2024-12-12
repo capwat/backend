@@ -43,5 +43,7 @@ mod prelude {
     pub use diesel_async::{RunQueryDsl, SaveChangesDsl};
 }
 
+mod follower;
 mod instance;
+mod post;
 mod users;

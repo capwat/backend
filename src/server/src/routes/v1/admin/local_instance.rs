@@ -1,5 +1,5 @@
 use axum::response::{IntoResponse, Response};
-use capwat_api_types::routes::instance::{InstanceSettingsResponse, UserSettings};
+use capwat_api_types::routes::instance::{InstanceSettingsResponse, PostSettings, UserSettings};
 use capwat_error::ApiError;
 
 use crate::extract::{Json, LocalInstanceSettings, SessionUser};
@@ -14,6 +14,9 @@ pub async fn get_settings(
         .await?;
 
     let response = InstanceSettingsResponse {
+        posts: PostSettings {
+            max_characters: response.post_max_characters as u16,
+        },
         users: UserSettings {
             requires_email_registration: response.require_email_registration,
             requires_email_verification: response.require_email_verification,

@@ -8,7 +8,7 @@ use std::num::NonZeroU32;
 
 use super::DBLoadError;
 
-#[derive(Debug, Document, ConfigParts)]
+#[derive(Debug, Clone, Document, ConfigParts)]
 #[config(attr(derive(Debug, Deserialize)))]
 #[config(attr(serde(rename_all = "kebab-case")))]
 pub struct DatabasePool {

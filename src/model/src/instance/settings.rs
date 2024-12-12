@@ -13,6 +13,8 @@ pub struct InstanceSettings {
     pub id: InstanceId,
     #[builder(default = chrono::Utc::now().naive_utc())]
     pub created: NaiveDateTime,
+    #[builder(default = 200)]
+    pub post_max_characters: i32,
     #[builder(default)]
     pub registration_mode: RegistrationMode,
     #[builder(default = false)]
@@ -27,6 +29,7 @@ pub struct InstanceSettings {
 #[derive(Builder, AsChangeset)]
 #[diesel(table_name = crate::postgres::schema::instance_settings)]
 pub struct UpdateInstanceSettings {
+    pub post_max_characters: Option<i32>,
     pub registration_mode: Option<RegistrationMode>,
     pub require_email_registration: Option<bool>,
     pub require_email_verification: Option<bool>,

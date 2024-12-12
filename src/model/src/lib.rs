@@ -2,6 +2,7 @@ mod postgres;
 
 pub mod id;
 pub mod instance;
+pub mod post;
 pub mod user;
 
 pub use self::instance::InstanceSettings;

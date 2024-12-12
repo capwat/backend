@@ -64,6 +64,13 @@ capwat_macros::define_error_category! {
             InvalidCredientials,
         },
 
+        /// Publishing a post failed!
+        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+        PublishPostFailed {
+            EmptyContent,
+            TooManyCharacters,
+        },
+
         /// This variant shows the possiblities of why user registration failed
         /// in the first place. It contains mostly user input only.
         #[derive(Debug, Clone, PartialEq, Eq, Hash)]

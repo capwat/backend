@@ -1,11 +1,15 @@
+mod extract;
+mod util;
+
 pub mod app;
 pub mod auth;
 pub mod middleware;
 pub mod routes;
 pub mod services;
 
-mod extract;
-mod util;
+#[cfg(test)]
+#[path = "util/test.rs"]
+pub(crate) mod test_utils;
 
 pub use self::app::App;
 

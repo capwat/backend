@@ -32,7 +32,7 @@ impl<O, E, F: Future<Output = Result<O, E>>, C: FnMut() -> F> Retry<C> {
                 Err(error) => {
                     warn!(
                         tries = %self.tries,
-                        ?error,
+                        %error,
                         "operation {:?} failed. retrying for {:?}...",
                         self.builder.name, self.builder.wait
                     );

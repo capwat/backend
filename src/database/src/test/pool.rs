@@ -1,64 +1,121 @@
 use async_trait::async_trait;
+use capwat_config::{DatabasePool, DatabasePools};
 use capwat_error::{ApiErrorCategory, Error, Result};
-use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl, SimpleAsyncConnection};
+use capwat_utils::ProtectedString;
+use diesel_async::{RunQueryDsl, SimpleAsyncConnection};
 use diesel_async_migrations::EmbeddedMigrations;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use tokio::sync::Mutex;
-use tracing::debug;
+use tracing::{debug, warn};
+use url::Url;
 
 use super::schema::{ConnectPoolInfo, DatabaseEntry};
-use crate::{error::AcquireError, internal::AnyPool, pool::PgConnection};
+
+use crate::error::AcquireError;
+use crate::internal::AnyPool;
+use crate::pool::PgConnection;
+use crate::PgPool;
 
 pub struct TestPool(Option<Arc<TestPoolInner>>);
 
+pub struct TestPoolInner {
+    connect_info: ConnectPoolInfo,
+    pool: PgPool,
+}
+
 impl TestPool {
-    #[tracing::instrument(name = "db.test_pool.connect")]
+    #[tracing::instrument(skip_all, name = "db.test_pool.connect")]
     pub async fn connect(migrations: &EmbeddedMigrations) -> Self {
-        let mut base_url = super::DATABASE_URL.clone();
-        base_url.set_path("");
+        let base_url = Self::get_base_db_url(&super::DATABASE_URL);
+        let connect_info = Self::setup_temporary_db(&base_url).await;
 
-        let mut url = base_url.clone();
-        let connect_info = Self::setup_db(base_url.as_ref()).await;
-        url.set_path(&connect_info.db_name);
+        let primary_cfg = DatabasePool {
+            min_connections: 1,
+            max_connections: 5,
+            readonly_mode: false,
+            url: ProtectedString::new(base_url.join(&connect_info.db_name).unwrap()),
+        };
 
-        let conn = Mutex::new(Self::establish(url.as_ref()).await);
-        crate::migrations::run_pending(&mut PgConnection::Raw(conn.lock().await), migrations)
+        let pool = PgPool::build(
+            &DatabasePools {
+                primary: primary_cfg.clone(),
+                replica: None,
+                enforce_tls: *super::DATABASE_USE_TLS,
+                idle_timeout: Duration::from_secs(600),
+
+                // do this ASAP
+                connection_timeout: Duration::from_secs(1),
+                statement_timeout: Duration::from_secs(5),
+            },
+            &primary_cfg,
+        );
+
+        crate::migrations::run_pending(&mut pool.acquire().await.unwrap(), migrations)
             .await
             .unwrap();
 
-        Self(Some(Arc::new(TestPoolInner {
-            connect_info,
-            inner: Some(conn),
-        })))
+        pool.check_health(None)
+            .await
+            .expect("database is unhealthy to continue the rest of the tests. Please check your PostgreSQL database connection before trying to perform the tests again");
+
+        Self(Some(Arc::new(TestPoolInner { connect_info, pool })))
     }
 
-    async fn establish(url: &str) -> AsyncPgConnection {
-        if *super::DATABASE_USE_TLS {
-            crate::internal::establish_connection_with_tls(url).await
-        } else {
-            AsyncPgConnection::establish(url).await
+    #[tracing::instrument(skip_all, name = "db.test_pool.setup_temporary_db")]
+    async fn setup_temporary_db(base_url: &Url) -> ConnectPoolInfo {
+        debug!("setting up test database");
+
+        let pool = {
+            let primary_cfg = DatabasePool {
+                min_connections: 30,
+                max_connections: 200,
+                readonly_mode: false,
+                url: ProtectedString::new(base_url),
+            };
+            PgPool::build(
+                &DatabasePools {
+                    primary: primary_cfg.clone(),
+                    replica: None,
+                    enforce_tls: *super::DATABASE_USE_TLS,
+                    // do this ASAP
+                    connection_timeout: Duration::from_secs(1),
+                    idle_timeout: Duration::from_secs(600),
+                    statement_timeout: Duration::from_secs(1),
+                },
+                &primary_cfg,
+            )
+        };
+
+        let master_pool = match super::MASTER_POOL.try_insert(pool) {
+            Ok(inserted) => inserted,
+            Err((existing, _)) => existing,
+        };
+
+        // Make sure the master pool has reached the minimum connections as possible
+        loop {
+            master_pool.check_health(None).await.unwrap();
+            if master_pool.connections() > 30 {
+                break;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
-        .unwrap()
-    }
 
-    async fn setup_db(base_url: &str) -> ConnectPoolInfo {
-        let mut conn = Self::establish(base_url).await;
+        let mut conn = master_pool.acquire().await.unwrap();
         conn.batch_execute(
             r"
-        LOCK TABLE pg_catalog.pg_namespace IN SHARE ROW EXCLUSIVE MODE;
-        CREATE SCHEMA IF NOT EXISTS _capwat_test;
-        CREATE TABLE IF NOT EXISTS _capwat_test.databases (
-            id int primary key generated always as identity,
-            name text not null,
-            created_at timestamp not null default now()
-        );
+                LOCK TABLE pg_catalog.pg_namespace IN SHARE ROW EXCLUSIVE MODE;
+                CREATE SCHEMA IF NOT EXISTS _capwat_test;
+                CREATE TABLE IF NOT EXISTS _capwat_test.databases (
+                    id int primary key generated always as identity,
+                    name text not null,
+                    created_at timestamp not null default now()
+                );
 
-        CREATE INDEX IF NOT EXISTS databases_created_at
-            ON _capwat_test.databases(created_at);
+                CREATE INDEX IF NOT EXISTS databases_created_at
+                    ON _capwat_test.databases(created_at);
 
-        CREATE SEQUENCE IF NOT EXISTS _capwat_test.database_ids
-        ",
+                CREATE SEQUENCE IF NOT EXISTS _capwat_test.database_ids
+                ",
         )
         .await
         .expect("failed to initialize testing database");
@@ -67,8 +124,8 @@ impl TestPool {
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("System clock went backwards!");
 
-        if super::DO_CLEANUP.swap(false, std::sync::atomic::Ordering::Relaxed) {
-            Self::cleanup_test_dbs(&mut conn, now).await;
+        if super::DO_CLEANUP.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            Self::cleanup_test_dbs(&mut PgConnection::Raw(&mut conn), now).await;
         }
 
         let db_name = diesel::sql_query(
@@ -88,29 +145,16 @@ impl TestPool {
             .await
             .expect("failed to initialize testing database");
 
-        drop(conn);
-
         ConnectPoolInfo {
             base_url: base_url.to_string(),
             db_name,
         }
     }
 
-    async fn cleanup_test_db(conn: &mut AsyncPgConnection, name: &str) {
-        diesel::sql_query(format!("DROP DATABASE IF EXISTS {name:?}"))
-            .execute(conn)
-            .await
-            .expect("Failed to cleanup leftover testing databases");
-
-        diesel::sql_query("DELETE FROM _capwat_test.databases WHERE name = $1")
-            .bind::<diesel::sql_types::Text, _>(name)
-            .execute(conn)
-            .await
-            .expect("Failed to cleanup leftover testing databases");
-    }
-
+    #[tracing::instrument(skip_all, name = "db.test_pool.cleanup_test_dbs")]
     #[allow(clippy::unwrap_used)]
-    async fn cleanup_test_dbs(conn: &mut AsyncPgConnection, created_before: Duration) {
+    async fn cleanup_test_dbs(conn: &mut PgConnection<'_>, created_before: Duration) {
+        debug!("cleaning unused test databases...");
         let created_before = i64::try_from(created_before.as_secs()).unwrap();
 
         // Risk of denial of service attack
@@ -121,7 +165,7 @@ impl TestPool {
             ",
         )
         .bind::<diesel::sql_types::BigInt, _>(&created_before)
-        .get_results::<DatabaseEntry>(conn)
+        .get_results::<DatabaseEntry>(&mut *conn)
         .await
         .expect("Failed to cleanup leftover testing databases")
         .into_iter()
@@ -142,10 +186,12 @@ impl TestPool {
                     diesel::sql_query(
                         r"DELETE FROM _capwat_test.databases WHERE name = $1".to_string(),
                     )
-                    .bind::<diesel::sql_types::Text, _>(db_name)
+                    .bind::<diesel::sql_types::Text, _>(&db_name)
                     .execute(conn)
                     .await
                     .expect("Failed to cleanup leftover testing databases");
+
+                    debug!("cleaned unused test database: {db_name:?}");
                 }
                 Err(diesel::result::Error::DatabaseError(.., e)) => {
                     eprintln!(
@@ -160,6 +206,27 @@ impl TestPool {
             }
         }
     }
+
+    async fn cleanup_test_db(conn: &mut PgConnection<'_>, name: &str) {
+        diesel::sql_query(format!("DROP DATABASE IF EXISTS {name:?}"))
+            .execute(&mut *conn)
+            .await
+            .expect("Failed to cleanup leftover testing databases");
+
+        diesel::sql_query("DELETE FROM _capwat_test.databases WHERE name = $1")
+            .bind::<diesel::sql_types::Text, _>(name)
+            .execute(&mut *conn)
+            .await
+            .expect("Failed to cleanup leftover testing databases");
+    }
+}
+
+impl TestPool {
+    fn get_base_db_url(database_url: &Url) -> Url {
+        let mut base_url = database_url.clone();
+        base_url.set_path("");
+        base_url
+    }
 }
 
 #[async_trait]
@@ -170,22 +237,21 @@ impl AnyPool for TestPool {
                 .category(ApiErrorCategory::Outage)
                 .attach_printable("Inner test pool is dropped")
         })?;
+        debug_assert!(!inner.pool.0.is_testing());
 
-        let conn = inner.inner.as_ref().unwrap().lock().await;
-        Ok(PgConnection::Raw(conn))
+        inner.pool.acquire().await
     }
 
     fn idle_connections(&self) -> u32 {
-        let inner = &self.0.as_ref().unwrap().inner;
-        if inner.as_ref().unwrap().try_lock().is_ok() {
-            1
-        } else {
-            0
-        }
+        let pool = &self.0.as_ref().unwrap().pool;
+        debug_assert!(!pool.0.is_testing());
+        pool.idle_connections()
     }
 
     fn connections(&self) -> u32 {
-        1
+        let pool = &self.0.as_ref().unwrap().pool;
+        debug_assert!(!pool.0.is_testing());
+        pool.connections()
     }
 
     fn is_testing(&self) -> bool {
@@ -201,7 +267,7 @@ impl Drop for TestPool {
         };
 
         // Perform a shutdown!
-        let Ok(mut inner) = Arc::try_unwrap(inner) else {
+        let Ok(inner) = Arc::try_unwrap(inner) else {
             return;
         };
 
@@ -212,27 +278,21 @@ impl Drop for TestPool {
         // I did not anticipate that this single function called here it
         // works because I was very frustrated of why cleanup_test_db won't work.
         tokio::task::block_in_place(|| {
-            debug!("dropping existing PostgreSQL connection");
-            drop(inner.inner.take().unwrap().into_inner());
+            debug!("dropping existing PostgreSQL pool");
+            drop(inner.pool);
 
-            debug!("establishing PostgreSQL connection from base url");
-            let mut conn = futures::executor::block_on(AsyncPgConnection::establish(
-                &inner.connect_info.base_url,
-            ))
-            .expect("Failed to connect to the database");
+            // this is very illegal, using tokio and futures executor
+            // at the same time... -_-
+            futures::executor::block_on(async move {
+                debug!("acquiring connection from the master pool");
 
-            debug!("performing testing database cleanup");
-            futures::executor::block_on(Self::cleanup_test_db(
-                &mut conn,
-                &inner.connect_info.base_url,
-            ));
+                let mut conn = super::MASTER_POOL.get().unwrap().acquire().await.unwrap();
+                debug!("performing testing database cleanup");
+
+                Self::cleanup_test_db(&mut conn, &inner.connect_info.base_url).await;
+            });
 
             debug!("testing database cleanup done");
         });
     }
-}
-
-pub struct TestPoolInner {
-    connect_info: ConnectPoolInfo,
-    inner: Option<Mutex<AsyncPgConnection>>,
 }

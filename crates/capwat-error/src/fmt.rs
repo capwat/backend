@@ -27,7 +27,7 @@ impl<C> fmt::Display for crate::Error<C> {
         if f.alternate() {
             write!(f, "{:?}", self.inner.report)
         } else {
-            write!(f, "{}: {:#?}", self.inner.category, self.inner.report)
+            write!(f, "{}: {:#?}", self.inner.category, self.inner.report,)
         }
     }
 }

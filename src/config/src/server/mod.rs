@@ -124,7 +124,10 @@ impl Server {
         let partial = PartialServer {
             auth: PartialAuth {
                 jwt: PartialJwt {
-                    private_key_file: None,
+                    private_key_file: Some(PathBuf::from(concat!(
+                        env!("CARGO_WORKSPACE_DIR"),
+                        "/tests/files/jwt.pem"
+                    ))),
                 },
             },
             database: partial_db,

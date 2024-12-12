@@ -91,15 +91,16 @@ pub struct LoginResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::util::test::AsJsonResponse;
+    use crate::test_utils::{self, TestResultExt};
     use assert_json_diff::assert_json_include;
     use capwat_model::instance::UpdateInstanceSettings;
     use serde_json::json;
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_login() {
-        let (app, settings) = crate::util::test::build_test_app().await;
-        let alice_params = crate::util::test::init_test_user()
+        let (app, settings) = test_utils::build_test_app().await;
+        let alice_params = test_utils::users::register()
             .app(&app)
             .name("alice")
             .call()
@@ -108,7 +109,7 @@ mod tests {
         let local_settings = LocalInstanceSettings::new(settings);
         let response = Login {
             name_or_email: Sensitive::new("Alice"),
-            access_key_hash: Some(Sensitive::new(&alice_params.params.access_key_hash)),
+            access_key_hash: Some(Sensitive::new(&alice_params.access_key_hash)),
         }
         .perform(&app, &local_settings)
         .await;
@@ -116,10 +117,11 @@ mod tests {
         assert!(response.is_ok());
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_user_has_no_email() {
-        let (app, _) = crate::util::test::build_test_app().await;
-        let alice_params = crate::util::test::init_test_user()
+        let (app, _) = test_utils::build_test_app().await;
+        let alice_params = test_utils::users::register()
             .app(&app)
             .name("alice")
             .call()
@@ -138,11 +140,11 @@ mod tests {
         let local_settings = LocalInstanceSettings::new(settings);
         let error = Login {
             name_or_email: Sensitive::new("Alice"),
-            access_key_hash: Some(Sensitive::new(&alice_params.params.access_key_hash)),
+            access_key_hash: Some(Sensitive::new(&alice_params.access_key_hash)),
         }
         .perform(&app, &local_settings)
         .await
-        .as_json_error();
+        .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -150,10 +152,11 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_user_has_not_verified_their_email() {
-        let (app, _) = crate::util::test::build_test_app().await;
-        let alice_params = crate::util::test::init_test_user()
+        let (app, _) = test_utils::build_test_app().await;
+        let alice_params = test_utils::users::register()
             .app(&app)
             .name("alice")
             .email("alice@example.com")
@@ -173,11 +176,11 @@ mod tests {
         let local_settings = LocalInstanceSettings::new(settings);
         let error = Login {
             name_or_email: Sensitive::new("Alice"),
-            access_key_hash: Some(Sensitive::new(&alice_params.params.access_key_hash)),
+            access_key_hash: Some(Sensitive::new(&alice_params.access_key_hash)),
         }
         .perform(&app, &local_settings)
         .await
-        .as_json_error();
+        .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -185,10 +188,11 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_reject_if_gave_invalid_access_key() {
-        let (app, settings) = crate::util::test::build_test_app().await;
-        crate::util::test::init_test_user()
+        let (app, settings) = test_utils::build_test_app().await;
+        test_utils::users::register()
             .app(&app)
             .name("alice")
             .call()
@@ -201,7 +205,7 @@ mod tests {
         }
         .perform(&app, &local_settings)
         .await
-        .as_json_error();
+        .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -212,9 +216,10 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_throw_invalid_creds_if_user_not_found_but_access_key_is_present() {
-        let (app, settings) = crate::util::test::build_test_app().await;
+        let (app, settings) = test_utils::build_test_app().await;
 
         let local_settings = LocalInstanceSettings::new(settings);
         let error = Login {
@@ -223,7 +228,7 @@ mod tests {
         }
         .perform(&app, &local_settings)
         .await
-        .as_json_error();
+        .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -234,9 +239,10 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_give_random_salt_if_user_is_not_found() {
-        let (app, settings) = crate::util::test::build_test_app().await;
+        let (app, settings) = test_utils::build_test_app().await;
 
         let local_settings = LocalInstanceSettings::new(settings);
         let error = Login {
@@ -245,7 +251,7 @@ mod tests {
         }
         .perform(&app, &local_settings)
         .await
-        .as_json_error();
+        .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -256,10 +262,11 @@ mod tests {
         );
     }
 
+    #[tracing::instrument]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_give_their_salt_if_user_is_found() {
-        let (app, settings) = crate::util::test::build_test_app().await;
-        let user = crate::util::test::init_test_user()
+        let (app, settings) = test_utils::build_test_app().await;
+        let alice_params = test_utils::users::register()
             .app(&app)
             .name("alice")
             .email("alice@example.com")
@@ -274,7 +281,7 @@ mod tests {
         }
         .perform(&app, &local_settings)
         .await
-        .as_json_error();
+        .expect_error_json();
 
         assert_json_include!(
             actual: error,
@@ -282,7 +289,7 @@ mod tests {
                 "code": "login_user_failed",
                 "subcode": "access_key_required",
                 "data": {
-                    "salt": user.params.salt,
+                    "salt": alice_params.salt,
                 },
             })
         );

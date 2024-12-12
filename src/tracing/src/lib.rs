@@ -49,9 +49,7 @@ pub fn init_for_tests() {
     );
 
     let registry = tracing_subscriber::Registry::default().with(console);
-    tracing::subscriber::set_global_default(registry)
-        .change_context(TracingInitError)
-        .unwrap();
+    let _ = tracing::subscriber::set_global_default(registry);
 }
 
 fn make_env_filter(targets: &str) -> EnvFilter {

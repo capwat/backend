@@ -59,7 +59,7 @@ impl Error {
 pub(super) fn get_middleware<T: Context + 'static>() -> Option<StoredMiddleware> {
     let lock = MIDDLEWARES
         .read()
-        .unwrap_or_else(|_| unreachable!("Hook is posioned."));
+        .unwrap_or_else(|_| unreachable!("Hook is poisoned."));
 
     let t = TypeId::of::<T>();
     for (id, middleware) in lock.iter() {
