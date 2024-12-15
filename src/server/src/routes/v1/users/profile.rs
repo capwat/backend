@@ -1,19 +1,29 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::Router;
 use capwat_error::ApiError;
 use capwat_model::id::UserId;
 
 use crate::extract::{Json, LocalInstanceSettings, SessionUser};
 use crate::{services, App};
 
-pub mod local {
+pub mod me {
     use super::*;
+
     use capwat_api_types::routes::posts::{PublishPost, PublishPostResponse};
     use capwat_api_types::routes::users::LocalUserProfile;
     use capwat_utils::Sensitive;
 
-    pub async fn view(session_user: SessionUser) -> Result<Response, ApiError> {
+    pub fn routes() -> Router<App> {
+        use axum::routing::{get, post};
+
+        Router::new()
+            .route("/", get(my_profile))
+            .route("/posts", post(publish_post))
+    }
+
+    pub async fn my_profile(session_user: SessionUser) -> Result<Response, ApiError> {
         let user_view = services::users::profile::LocalProfile
             .perform(session_user)
             .await
@@ -57,28 +67,117 @@ pub mod local {
     }
 }
 
-pub async fn follow(
-    app: App,
-    user: SessionUser,
-    Path(target_id): Path<UserId>,
-) -> Result<Response, ApiError> {
-    let request = services::users::profile::FollowUser {
-        target: target_id.into(),
-    };
-    request.perform(&app, &user).await?;
+pub mod others {
+    use super::*;
 
-    Ok(StatusCode::OK.into_response())
-}
+    pub fn routes() -> Router<App> {
+        use axum::routing::post;
 
-pub async fn unfollow(
-    app: App,
-    user: SessionUser,
-    Path(target_id): Path<UserId>,
-) -> Result<Response, ApiError> {
-    let request = services::users::profile::UnfollowUser {
-        target: target_id.into(),
-    };
-    request.perform(&app, &user).await?;
+        Router::new()
+            .route("/follow", post(follow))
+            .route("/unfollow", post(unfollow))
+    }
 
-    Ok(StatusCode::OK.into_response())
+    pub async fn follow(
+        app: App,
+        user: SessionUser,
+        Path(target_id): Path<UserId>,
+    ) -> Result<Response, ApiError> {
+        let request = services::users::profile::FollowUser {
+            target: target_id.into(),
+        };
+        request.perform(&app, &user).await?;
+
+        Ok(StatusCode::OK.into_response())
+    }
+
+    pub async fn unfollow(
+        app: App,
+        user: SessionUser,
+        Path(target_id): Path<UserId>,
+    ) -> Result<Response, ApiError> {
+        let request = services::users::profile::UnfollowUser {
+            target: target_id.into(),
+        };
+        request.perform(&app, &user).await?;
+
+        Ok(StatusCode::OK.into_response())
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::test_utils;
+
+        use axum_test::TestServer;
+        use serde_json::json;
+
+        mod me {
+            use super::*;
+
+            #[capwat_macros::api_test]
+            async fn should_get_their_profile(app: App, mut server: TestServer) {
+                let alice = test_utils::users::override_credentials()
+                    .app(&app)
+                    .server(&mut server)
+                    .name("alice")
+                    .call()
+                    .await;
+
+                let response = server.get("/api/v1/users/@me").await;
+                response.assert_status_ok();
+                response.assert_json_contains(&json!({
+                    "id": alice.user.id,
+                    "name": alice.user.name,
+                    "display_name": alice.user.display_name,
+
+                    "followers": 0,
+                    "following": 0,
+                    "posts": 0,
+                }));
+            }
+
+            #[capwat_macros::api_test]
+            async fn should_restrict_if_no_auth_is_presented(server: TestServer) {
+                let response = server.get("/api/v1/users/@me").await;
+                response.assert_status_unauthorized();
+                response.assert_json_contains(&json!({ "code": "access_denied" }));
+            }
+        }
+
+        mod follow {
+            use super::*;
+            use capwat_model::user::Follower;
+
+            #[capwat_macros::api_test]
+            async fn should_work(app: App, mut server: TestServer) {
+                let alice = test_utils::users::override_credentials()
+                    .app(&app)
+                    .server(&mut server)
+                    .name("alice")
+                    .call()
+                    .await;
+
+                let bob = test_utils::users::register()
+                    .name("bob")
+                    .app(&app)
+                    .call()
+                    .await;
+
+                let response = server
+                    .post(&format!("/api/v1/users/{}/follow", bob.user_id))
+                    .await;
+
+                response.assert_status_ok();
+
+                // checking if they really follow someone
+                let mut conn = app.db_read().await.unwrap();
+                let data = Follower::get(&mut conn, alice.user.id, bob.user_id)
+                    .await
+                    .unwrap();
+
+                assert!(data.is_some());
+            }
+        }
+    }
 }

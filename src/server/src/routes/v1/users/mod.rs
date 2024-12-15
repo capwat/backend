@@ -1,4 +1,5 @@
 use axum::response::{IntoResponse, Response};
+use axum::Router;
 use capwat_api_types::routes::users::{
     LoginUser, LoginUserResponse, RegisterUser, RegisterUserResponse,
 };
@@ -9,6 +10,16 @@ use crate::extract::{Json, LocalInstanceSettings};
 use crate::{services, App};
 
 pub mod profile;
+
+pub fn routes() -> Router<App> {
+    use axum::routing::post;
+
+    Router::new()
+        .nest("/@me", self::profile::me::routes())
+        .nest("/:id", self::profile::others::routes())
+        .route("/login", post(self::login))
+        .route("/register", post(self::register))
+}
 
 pub async fn login(
     app: App,
@@ -64,39 +75,6 @@ mod tests {
 
     use axum_test::TestServer;
     use serde_json::json;
-
-    mod local_profile {
-        use super::*;
-
-        #[capwat_macros::api_test]
-        async fn should_get_their_profile(app: App, mut server: TestServer) {
-            let alice = test_utils::users::override_credentials()
-                .app(&app)
-                .server(&mut server)
-                .name("alice")
-                .call()
-                .await;
-
-            let response = server.get("/api/v1/users/@me").await;
-            response.assert_status_ok();
-            response.assert_json_contains(&json!({
-                "id": alice.user.id,
-                "name": alice.user.name,
-                "display_name": alice.user.display_name,
-
-                "followers": 0,
-                "following": 0,
-                "posts": 0,
-            }));
-        }
-
-        #[capwat_macros::api_test]
-        async fn should_restrict_if_no_auth_is_presented(server: TestServer) {
-            let response = server.get("/api/v1/users/@me").await;
-            response.assert_status_unauthorized();
-            response.assert_json_contains(&json!({ "code": "access_denied" }));
-        }
-    }
 
     mod login {
         use super::*;

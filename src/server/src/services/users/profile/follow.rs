@@ -69,6 +69,14 @@ mod tests {
             .perform(&app, &alice.get_session_user(&app).await)
             .await
             .unwrap();
+
+        // checking if they really follow someone
+        let mut conn = app.db_read().await.unwrap();
+        let data = Follower::get(&mut conn, alice.user.id, bob.user_id)
+            .await
+            .unwrap();
+
+        assert!(data.is_some());
     }
 
     #[capwat_macros::api_test]
@@ -102,6 +110,14 @@ mod tests {
             .perform(&app, &alice.get_session_user(&app).await)
             .await
             .unwrap();
+
+        // checking if they really follow someone
+        let mut conn = app.db_read().await.unwrap();
+        let data = Follower::get(&mut conn, alice.user.id, bob.user_id)
+            .await
+            .unwrap();
+
+        assert!(data.is_some());
     }
 
     #[capwat_macros::api_test]
