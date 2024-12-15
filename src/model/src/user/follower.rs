@@ -1,10 +1,11 @@
+use capwat_macros::SeaTable;
 use chrono::NaiveDateTime;
-use diesel::{Queryable, Selectable};
+use sqlx::FromRow;
 
 use crate::id::{FollowerId, UserId};
 
-#[derive(Debug, Clone, Queryable, Selectable)]
-#[diesel(table_name = crate::postgres::schema::followers)]
+#[derive(Debug, Clone, FromRow, SeaTable)]
+#[sea_table(table_name = "followers")]
 pub struct Follower {
     pub id: FollowerId,
     pub created: NaiveDateTime,

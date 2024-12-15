@@ -9,6 +9,7 @@ rust-version.workspace = true
 capwat-api-types = { workspace = true, features = ["server"] }
 capwat-db.workspace = true
 capwat-error.workspace = true
+capwat-macros.workspace = true
 capwat-utils.workspace = true
 
 bon.workspace = true
@@ -17,11 +18,15 @@ serde.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
-diesel.workspace = true
-diesel-async.workspace = true
-diesel_async_migrations = "0.15.0"
-diesel-derive-newtype.version = "2.1.2"
-diesel-derive-enum = { version = "2.1.0", features = ["postgres"] }
+sea-query = { version = "0", features = ["backend-postgres", "with-chrono"] }
+sea-query-binder = { version = "0.7.0", features = ["sqlx-postgres", "with-chrono", "runtime-tokio-rustls"] }
+sqlx.workspace = true
+
+[dev-dependencies]
+capwat-crypto.workspace = true
+capwat-tracing.workspace = true
+capwat-vfs.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

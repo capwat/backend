@@ -37,7 +37,7 @@ pub(crate) struct GetSessionUserError;
 
 impl SessionUser {
     pub(crate) async fn from_db(
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: UserId,
     ) -> capwat_error::Result<Self, GetSessionUserError> {
         let user = User::find(conn, id)

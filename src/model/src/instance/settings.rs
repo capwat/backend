@@ -1,13 +1,13 @@
 use bon::Builder;
+use capwat_macros::SeaTable;
 use chrono::NaiveDateTime;
-use diesel::{AsChangeset, Queryable, Selectable};
-use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, Type};
 
 use crate::id::InstanceId;
 
-#[derive(Debug, Builder, Clone, Queryable, Selectable)]
-#[diesel(table_name = crate::postgres::schema::instance_settings)]
+#[derive(Debug, Builder, Clone, FromRow, SeaTable)]
+#[sea_table(changeset = "UpdateInstanceSettings", table_name = "instance_settings")]
 pub struct InstanceSettings {
     #[builder(default = InstanceId(0))]
     pub id: InstanceId,
@@ -16,6 +16,7 @@ pub struct InstanceSettings {
     #[builder(default = 200)]
     pub post_max_characters: i32,
     #[builder(default)]
+    #[sea_table(exclude_in_changeset)]
     pub registration_mode: RegistrationMode,
     #[builder(default = false)]
     pub require_email_registration: bool,
@@ -26,8 +27,7 @@ pub struct InstanceSettings {
     pub updated: Option<NaiveDateTime>,
 }
 
-#[derive(Builder, AsChangeset)]
-#[diesel(table_name = crate::postgres::schema::instance_settings)]
+#[derive(Builder)]
 pub struct UpdateInstanceSettings {
     pub post_max_characters: Option<i32>,
     pub registration_mode: Option<RegistrationMode>,
@@ -36,10 +36,9 @@ pub struct UpdateInstanceSettings {
     pub require_captcha: Option<bool>,
 }
 
-#[derive(Debug, DbEnum, Default, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize, Type)]
 #[serde(rename_all = "kebab-case")]
-#[ExistingTypePath = "crate::postgres::schema::sql_types::RegistrationMode"]
-#[DbValueStyle = "kebab-case"]
+#[sqlx(rename_all = "kebab-case", type_name = "registration_mode")]
 pub enum RegistrationMode {
     /// Open to all users
     #[default]

@@ -21,7 +21,7 @@ pub fn generate_register_user_params(passphrase: &[u8]) -> RegisterUserParams {
 
     // Generate our own salt and own derived key (512 bits)
     let salt = crate::salt::generate_user_salt();
-    let derived_key = derive_from_passphrase::<DERIVED_KEY_BYTES>(passphrase, &salt.as_slice());
+    let derived_key = derive_from_passphrase::<DERIVED_KEY_BYTES>(passphrase, salt.as_slice());
 
     // Then, we're going to hash the derived key another so that
     // we can send through the database.

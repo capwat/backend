@@ -1,8 +1,6 @@
 use axum::extract::{FromRequestParts, State};
-use capwat_db::error::{AcquireError, BeginTransactError};
-use capwat_db::pool::PgConnection;
-use capwat_db::transaction::Transaction;
-use capwat_db::PgPool;
+use capwat_db::error::{AcquireError, BeginTransactionError};
+use capwat_db::{PgPool, PgPooledConnection, PgTransaction};
 use capwat_error::ext::{NoContextResultExt, ResultExt};
 use capwat_error::Result;
 use capwat_vfs::Vfs;
@@ -23,12 +21,18 @@ pub struct AppError;
 
 impl App {
     pub fn new(config: capwat_config::Server, vfs: Vfs) -> Result<Self, AppError> {
-        let primary_db = PgPool::build(&config.database, &config.database.primary);
+        let primary_db = PgPool::build(&config.database, &config.database.primary)
+            .change_context(AppError)
+            .attach_printable("invalid database URL for the primary database")?;
+
         let replica_db = config
             .database
             .replica
             .as_ref()
-            .map(|replica| PgPool::build(&config.database, replica));
+            .map(|replica| PgPool::build(&config.database, replica))
+            .transpose()
+            .change_context(AppError)
+            .attach_printable("invalid database URL for the replica database")?;
 
         let (jwt_encode, jwt_decode) = Self::setup_jwt_keys(&config, &vfs)
             .change_context(AppError)
@@ -49,8 +53,8 @@ impl App {
     }
 
     /// Creates a new [`App`] for testing purposes.
-    pub async fn new_for_tests(vfs: Vfs) -> Self {
-        let primary_db = PgPool::build_for_tests(&capwat_model::DB_MIGRATIONS).await;
+    #[cfg(test)]
+    pub(crate) fn new_for_tests(pool: PgPool, vfs: Vfs) -> Self {
         let config = capwat_config::Server::for_tests();
         let (jwt_encode, jwt_decode) = Self::setup_jwt_keys(&config, &vfs)
             .change_context(AppError)
@@ -59,7 +63,7 @@ impl App {
 
         Self(Arc::new(AppInner {
             config: Arc::new(config),
-            primary_db,
+            primary_db: pool,
             replica_db: None,
             vfs,
 
@@ -72,9 +76,9 @@ impl App {
 impl App {
     /// Obtains a read/write database connection from the primary database pool.
     #[tracing::instrument(skip_all, name = "app.db_write")]
-    pub async fn db_write(&self) -> Result<Transaction<'_>, BeginTransactError> {
+    pub async fn db_write(&self) -> Result<PgTransaction<'_>, BeginTransactionError> {
         trace!("obtaining primary db connection...");
-        self.primary_db.begin_default().await
+        self.primary_db.begin().await
     }
 
     /// Obtains a readonly database connection from the replica
@@ -83,7 +87,7 @@ impl App {
     /// The replica pool will be the first to obtain, if not,
     /// then the primary pool will be obtained instead.
     #[tracing::instrument(skip_all, name = "app.db_read")]
-    pub async fn db_read(&self) -> Result<PgConnection<'_>, AcquireError> {
+    pub async fn db_read(&self) -> Result<PgPooledConnection, AcquireError> {
         trace!("obtaining replica db connection...");
 
         let Some(replica_pool) = self.replica_db.as_ref() else {
@@ -104,7 +108,7 @@ impl App {
     /// If the primary pool is not available, the replica pool will
     /// be used instead to obtain the connection.
     #[tracing::instrument(skip_all, name = "app.db_read_prefer_primary")]
-    pub async fn db_read_prefer_primary(&self) -> Result<PgConnection<'_>, AcquireError> {
+    pub async fn db_read_prefer_primary(&self) -> Result<PgPooledConnection, AcquireError> {
         trace!("obtaining primary db connection...");
 
         let Some(replica_pool) = self.replica_db.as_ref() else {

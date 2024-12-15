@@ -7,7 +7,7 @@ pub fn apply(tokens: TokenStream) -> syn::Result<TokenStream> {
     if input.sig.asyncness.is_none() {
         return Err(syn::Error::new(
             input.sig.span(),
-            "all functions with #[postgres_query_test] must be async",
+            "all functions with #[server_test] must be async",
         ));
     }
 
@@ -15,11 +15,13 @@ pub fn apply(tokens: TokenStream) -> syn::Result<TokenStream> {
     let inner_ident = syn::Ident::new("inner", test_ident.span());
     input.sig.ident = inner_ident.clone();
 
+    let fn_arg_types = input.sig.inputs.iter().map(|_| quote! { _ });
+
     Ok(quote! {
         #[tracing::instrument]
         #[tokio::test]
         async fn #test_ident() {
-            use ::capwat_db::testing::TestFn;
+            use crate::test_utils::TestFn;
 
             let vfs = ::capwat_vfs::Vfs::new_std();
             ::capwat_utils::env::load_dotenv(&vfs).ok();
@@ -27,8 +29,8 @@ pub fn apply(tokens: TokenStream) -> syn::Result<TokenStream> {
 
             #input
 
-            let runner: fn(_) -> _ = #inner_ident;
-            if let Err(error) = runner.run_test(module_path!(), &crate::DB_MIGRATIONS).await {
+            let runner: fn(#(#fn_arg_types),*) -> _ = #inner_ident;
+            if let Err(error) = runner.run_test(module_path!()).await {
                 panic!("{error:#}");
             }
         }

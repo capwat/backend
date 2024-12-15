@@ -1,80 +1,103 @@
-use async_trait::async_trait;
-use bb8::{CustomizeConnection, Pool};
-use capwat_error::ext::ResultExt;
-use capwat_error::Result;
-use diesel_async::pooled_connection::PoolError;
-use diesel_async::pooled_connection::{
-    bb8::PooledConnection, AsyncDieselConnectionManager, ManagerConfig,
-};
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
-use diesel_async_migrations::EmbeddedMigrations;
-use std::sync::Arc;
-use std::time::Duration;
-use tracing::warn;
+use capwat_error::{ext::ResultExt, ApiErrorCategory, Result};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use std::{fmt::Debug, time::Duration};
+use thiserror::Error;
 
-use crate::error::{AcquireError, BeginTransactError};
-use crate::internal::AnyPool;
-use crate::transaction::{Transaction, TransactionBuilder};
+// Re-exports of sqlx's postgres stuff
+pub use sqlx::PgConnection;
 
+pub type PgTransaction<'q> = sqlx::Transaction<'q, sqlx::Postgres>;
+pub type PgPooledConnection = sqlx::pool::PoolConnection<sqlx::Postgres>;
+
+use crate::error::{AcquireError, BeginTransactionError};
+
+/// An asynchronous pool of database connections.
+///
+/// This object is a pointer of [`sqlx::PgPool`] to retain
+/// custom implementations with the pool code before the migration
+/// from [`diesel`] to [`sqlx`] as our PostgreSQL database driver.
+///
+/// [`diesel`]: https://diesel.rs
 #[derive(Clone)]
-pub struct PgPool(pub(crate) Arc<dyn AnyPool>);
+pub struct PgPool(sqlx::PgPool);
 
+#[derive(Debug, Error)]
+#[error("Could not build PgPool")]
+pub struct BuildPoolError;
+
+// We don't need to implement build_for_tests function anymore because we're going
+// to replace with #[capwat_macros::test] for our main crates (server and worker).
 impl PgPool {
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, name = "db.build_pool")]
     pub fn build(
         global: &capwat_config::DatabasePools,
         pool: &capwat_config::DatabasePool,
-    ) -> Self {
-        let mut config = ManagerConfig::default();
-        if global.enforce_tls {
-            config.custom_setup = Box::new(crate::internal::establish_connection_with_tls);
-        }
+    ) -> Result<Self, BuildPoolError> {
+        use sqlx::ConnectOptions;
 
-        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new_with_config(
-            pool.url.expose(),
-            config,
-        );
+        let stmt_timeout = global.statement_timeout;
+        let connect_options = PgConnectOptions::from_url(&pool.url.expose())
+            .change_context(BuildPoolError)
+            .attach_printable("failed to parse PostgreSQL connection URL")?;
 
-        let pool = Pool::builder()
-            .connection_timeout(global.connection_timeout)
-            .min_idle(Some(pool.min_connections))
-            .max_size(pool.max_connections)
-            .idle_timeout(Some(global.idle_timeout))
-            .connection_customizer(Box::new(CustomDbConnector {
-                readonly_mode: pool.readonly_mode,
-                statement_timeout: global.statement_timeout,
-            }))
-            .build_unchecked(manager);
+        let readonly_mode = pool.readonly_mode;
+        let pool = PgPoolOptions::new()
+            .idle_timeout(global.idle_timeout)
+            .acquire_timeout(global.connection_timeout)
+            .max_connections(pool.max_connections)
+            .min_connections(pool.min_connections)
+            .test_before_acquire(true)
+            .after_connect(move |conn, _metadata| {
+                Box::pin(async move {
+                    sqlx::query(r"SET application_name = 'capwat'")
+                        .execute(&mut *conn)
+                        .await?;
 
-        Self(Arc::new(pool))
-    }
+                    let timeout = stmt_timeout.as_millis();
+                    sqlx::query(&format!("SET statement_timeout = {timeout}"))
+                        .execute(&mut *conn)
+                        .await?;
 
-    #[tracing::instrument(skip_all, name = "db.build_for_tests")]
-    pub async fn build_for_tests(migrations: &EmbeddedMigrations) -> Self {
-        let pool = crate::test::TestPool::connect(migrations).await;
-        Self(Arc::new(pool))
+                    if readonly_mode {
+                        sqlx::query(r"SET default_transaction_read_only = 't'")
+                            .execute(conn)
+                            .await?;
+                    }
+
+                    Ok(())
+                })
+            })
+            .connect_lazy_with(connect_options);
+
+        Ok(Self(pool))
     }
 
     /// Attempts to acquire a connection from the pool.
-    pub async fn acquire(&self) -> Result<PgConnection<'_>, AcquireError> {
-        self.0.acquire().await
+    #[tracing::instrument(skip_all, name = "db.acquire")]
+    pub async fn acquire(&self) -> Result<PgPooledConnection, AcquireError> {
+        use sqlx::Error as SqlxError;
+        match self.0.acquire().await {
+            Ok(conn) => Ok(conn),
+            result @ Err(
+                SqlxError::PoolTimedOut | SqlxError::PoolClosed | SqlxError::WorkerCrashed,
+            ) => match result {
+                Err(error) => Err(error)
+                    .change_context(AcquireError::Unhealthy)
+                    .category(ApiErrorCategory::Outage),
+                _ => unreachable!(),
+            },
+            Err(error) => Err(error).change_context(AcquireError::General),
+        }
     }
 
     /// Attempts to perform a database transaction
-    pub async fn begin(&self) -> Result<TransactionBuilder<'_>, BeginTransactError> {
-        let conn = self.acquire().await.change_context(BeginTransactError)?;
-        Ok(TransactionBuilder::new(conn, self.0.is_testing()))
+    #[tracing::instrument(skip_all, name = "db.begin")]
+    pub async fn begin(&self) -> Result<PgTransaction<'_>, BeginTransactionError> {
+        self.0.begin().await.change_context(BeginTransactionError)
     }
 
-    /// Attempts to perform a database transaction without any configuration needed.
-    pub async fn begin_default(&self) -> Result<Transaction<'_>, BeginTransactError> {
-        let conn = self.acquire().await.change_context(BeginTransactError)?;
-        TransactionBuilder::new(conn, self.0.is_testing())
-            .build()
-            .await
-    }
-
-    #[tracing::instrument(skip(self), name = "db.check_health")]
+    /// Checks whether the database pool connection is healthy.
+    #[tracing::instrument(skip_all, name = "db.check_health")]
     pub async fn check_health(&self, timeout: Option<Duration>) -> Result<bool> {
         let tester = async {
             let mut conn = match self.acquire().await {
@@ -86,7 +109,7 @@ impl PgPool {
             };
 
             // TODO: Check if it is safe to cancel this query by canceling the query future.
-            diesel::sql_query("SELECT 1;").execute(&mut conn).await?;
+            sqlx::query("SELECT 1").execute(&mut *conn).await?;
             Ok::<bool, capwat_error::Error>(true)
         };
 
@@ -99,82 +122,23 @@ impl PgPool {
 
     #[must_use]
     pub fn connections(&self) -> u32 {
-        self.0.connections()
+        self.0.size()
     }
 
     #[must_use]
-    pub fn idle_connections(&self) -> u32 {
-        self.0.idle_connections()
+    pub fn idle_connections(&self) -> usize {
+        self.0.num_idle()
     }
 }
 
-impl std::fmt::Debug for PgPool {
+impl Debug for PgPool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("DbPool")
-            .field("name", &self.0.name())
-            .field("connections", &self.connections())
-            .field("idle_connections", &self.idle_connections())
-            .finish_non_exhaustive()
+        Debug::fmt(&self.0, f)
     }
 }
 
-/// This object allows to easily interface with our PostgreSQL connection
-/// which it can be from [`PgPool`] itself, the testing database object
-/// or directly from [`AsyncPgConnection`].
-pub enum PgConnection<'a> {
-    Pooled(PooledConnection<'static, AsyncPgConnection>),
-    Raw(&'a mut AsyncPgConnection),
-}
-
-impl std::ops::Deref for PgConnection<'_> {
-    type Target = AsyncPgConnection;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Pooled(n) => n,
-            Self::Raw(n) => n,
-        }
-    }
-}
-
-impl std::ops::DerefMut for PgConnection<'_> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match self {
-            Self::Pooled(n) => n,
-            Self::Raw(n) => n,
-        }
-    }
-}
-
-/// Sets up the PgConnection with parameters we have in config
-/// so it can behave on how it is supposed to.
-#[derive(Debug)]
-struct CustomDbConnector {
-    readonly_mode: bool,
-    statement_timeout: Duration,
-}
-
-#[async_trait]
-impl CustomizeConnection<AsyncPgConnection, PoolError> for CustomDbConnector {
-    async fn on_acquire(&self, conn: &mut AsyncPgConnection) -> std::result::Result<(), PoolError> {
-        diesel::sql_query("SET application_name = 'capwat'")
-            .execute(conn)
-            .await
-            .map_err(PoolError::QueryError)?;
-
-        let timeout = self.statement_timeout.as_millis();
-        diesel::sql_query(format!("SET statement_timeout = {timeout}"))
-            .execute(conn)
-            .await
-            .map_err(PoolError::QueryError)?;
-
-        if self.readonly_mode {
-            diesel::sql_query("SET default_transaction_read_only = 't'")
-                .execute(conn)
-                .await
-                .map_err(PoolError::QueryError)?;
-        }
-
-        Ok(())
+impl From<sqlx::PgPool> for PgPool {
+    fn from(value: sqlx::PgPool) -> Self {
+        Self(value)
     }
 }

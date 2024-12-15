@@ -2,7 +2,80 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
+use url::Url;
 use zeroize::Zeroize;
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct ProtectedUrl(ProtectedString);
+
+impl ProtectedUrl {
+    #[must_use]
+    pub fn new<T: AsRef<str>>(value: T) -> Option<Self> {
+        let value = value.as_ref();
+        Url::parse(value).ok()?;
+
+        Some(Self(ProtectedString::new(value)))
+    }
+
+    #[must_use]
+    pub fn expose(&self) -> Url {
+        // We already know that this value contains a valid URL
+        Url::parse(self.0.expose()).expect("unexpected parse failed")
+    }
+}
+
+impl FromStr for ProtectedUrl {
+    type Err = url::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        url::Url::parse(s)?;
+        Ok(Self(ProtectedString::new(s)))
+    }
+}
+
+impl Debug for ProtectedUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("<redacted>")
+    }
+}
+
+impl Display for ProtectedUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("<redacted>")
+    }
+}
+
+impl From<Url> for ProtectedUrl {
+    fn from(value: Url) -> Self {
+        ProtectedUrl(ProtectedString::new(&value))
+    }
+}
+
+impl From<ProtectedUrl> for Url {
+    fn from(value: ProtectedUrl) -> Self {
+        value.expose()
+    }
+}
+
+impl<'de> Deserialize<'de> for ProtectedUrl {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let url = Url::deserialize(deserializer)?;
+        Ok(url.into())
+    }
+}
+
+impl Serialize for ProtectedUrl {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.expose().serialize(serializer)
+    }
+}
 
 // TODO: Encrypt the contents of the string
 pub struct ProtectedString {

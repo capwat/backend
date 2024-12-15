@@ -1,11 +1,10 @@
 use bon::Builder;
 use chrono::NaiveDateTime;
-use diesel::{Queryable, Selectable};
+use sqlx::FromRow;
 
 use crate::id::{PostId, UserId};
 
-#[derive(Debug, Clone, Queryable, Selectable)]
-#[diesel(table_name = crate::postgres::schema::posts)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Post {
     pub id: PostId,
     pub created: NaiveDateTime,

@@ -70,32 +70,3 @@ pub async fn register(
 
     Ok(response.into_response())
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::test_utils;
-
-    mod login {
-        use super::*;
-        use capwat_api_types::routes::users::LoginUser;
-
-        #[tracing::instrument]
-        #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-        async fn should_login_user() {
-            let (server, app, _) = test_utils::build_test_server().await;
-            let credientials = test_utils::users::register()
-                .app(&app)
-                .name("alice")
-                .call()
-                .await;
-
-            let request = LoginUser::builder()
-                .name_or_email("alice")
-                .access_key_hash(credientials.access_key_hash)
-                .build();
-
-            let response = server.post("/api/v1/users/login").json(&request).await;
-            response.assert_status_ok();
-        }
-    }
-}

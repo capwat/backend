@@ -20,6 +20,7 @@ serde_with.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+url.workspace = true
 zeroize.workspace = true
 
 [dev-dependencies]

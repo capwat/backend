@@ -38,13 +38,11 @@ tracing             = "0.1.40"
 tracing-subscriber  = { version = "0.3.18", features = ["chrono", "env-filter"] }
 
 # core crates
-axum            = { version = "0.7.7", features = ["macros"] }
-clap            = { version = "4.5.21", features = ["derive"] }
-diesel          = { version = "2.2.5", features = ["chrono"] }
-diesel-async    = { version = "0.5.1", features = ["postgres", "bb8"] }
-futures         = "0.3.31"
-rustls          = "0.23.18"
-tokio           = { version = "1.41.1", features = ["full"] }
+axum    = { version = "0.7.7", features = ["macros"] }
+clap    = { version = "4.5.21", features = ["derive"] }
+futures = "0.3.31"
+sqlx    = { version = "*", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono"] }
+tokio   = { version = "1.41.1", features = ["full"] }
 
 # cryptographic crates
 argon2            = "0.5.3"
@@ -63,6 +61,7 @@ zeroize           = "1.8.1"
 # types
 bitflags    = { version = "2.6.0" }
 chrono      = { version = "0.4.38", features = ["serde"] }
+url         = { version = "2.5.3", features = ["serde"] }
 uuid        = { version = "1.11.0", features = ["v7"] }
 
 # encoding and serialization

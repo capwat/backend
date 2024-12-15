@@ -1,4 +1,4 @@
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use std::ops::Deref;
 use syn::{
@@ -8,6 +8,8 @@ use syn::{
     token::{Brace, Comma},
     DeriveInput,
 };
+
+use crate::utils::parse_lit_into_type;
 
 pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let syn::Data::Struct(data) = &input.data else {
@@ -305,61 +307,5 @@ impl ToTokens for Field<'_> {
         } else {
             tokens.extend(quote!(#ty));
         }
-    }
-}
-
-// stolen from serde. licensed under MIT License
-// code: https://github.com/serde-rs/serde/blob/b9dbfcb4ac3b7a663d9efc6eb1387c62302a6fb4/serde_derive/src/internals/attr.rs#L1484-L1504
-fn parse_lit_into_type(
-    attr_name: &'static str,
-    meta: &syn::meta::ParseNestedMeta<'_>,
-) -> syn::Result<syn::Type> {
-    let string = match get_lit_str(attr_name, meta)? {
-        Some(string) => string,
-        None => {
-            return Err(syn::Error::new(
-                Span::call_site(),
-                format!("expected {attr_name} to have a type: `{attr_name} = \"...\"`"),
-            ))
-        }
-    };
-
-    match string.parse() {
-        Ok(expr) => Ok(expr),
-        Err(_) => Err(syn::Error::new(
-            Span::call_site(),
-            format!("failed to parse type: {:?}", string.value()),
-        )),
-    }
-}
-
-// code: https://github.com/serde-rs/serde/blob/master/serde_derive/src/internals/attr.rs#L1426-L1460
-fn get_lit_str(
-    attr_name: &'static str,
-    meta: &syn::meta::ParseNestedMeta<'_>,
-) -> syn::Result<Option<syn::LitStr>> {
-    let expr: syn::Expr = meta.value()?.parse()?;
-    let mut value = &expr;
-    while let syn::Expr::Group(e) = value {
-        value = &e.expr;
-    }
-    if let syn::Expr::Lit(syn::ExprLit {
-        lit: syn::Lit::Str(lit),
-        ..
-    }) = value
-    {
-        let suffix = lit.suffix();
-        if !suffix.is_empty() {
-            return Err(syn::Error::new(
-                Span::call_site(),
-                format!("unexpected suffix `{suffix}` on string literal"),
-            ));
-        }
-        Ok(Some(lit.clone()))
-    } else {
-        Err(syn::Error::new(
-            expr.span(),
-            format!("expected {attr_name} to be a string: `{attr_name} = \"...\"`",),
-        ))
     }
 }

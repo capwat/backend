@@ -1,18 +1,140 @@
-use crate::{extract::LocalInstanceSettings, App};
 use axum_test::TestServer;
+use capwat_db::testing::test_with_pool;
+use capwat_error::ext::ResultExt;
+use capwat_error::Result;
+use capwat_model::InstanceSettings;
+use capwat_vfs::backend::InMemoryFs;
+use capwat_vfs::{Vfs, VfsSnapshot};
+use std::future::Future;
+use thiserror::Error;
+use tracing::{info, Instrument};
+
+use crate::App;
+
+#[allow(async_fn_in_trait)]
+pub trait TestFn {
+    async fn run_test(self, path: &'static str) -> Result<()>;
+}
+
+impl<Fut> TestFn for fn(App) -> Fut
+where
+    Fut: Future<Output = Result<()>>,
+{
+    async fn run_test(self, path: &'static str) -> Result<()> {
+        initialize_with_app(path, |app, _| self(app)).await
+    }
+}
+
+impl<Fut> TestFn for fn(App, InstanceSettings) -> Fut
+where
+    Fut: Future<Output = Result<()>>,
+{
+    async fn run_test(self, path: &'static str) -> Result<()> {
+        initialize_with_app(path, self).await
+    }
+}
+
+impl<Fut> TestFn for fn(App, LocalInstanceSettings) -> Fut
+where
+    Fut: Future<Output = Result<()>>,
+{
+    async fn run_test(self, path: &'static str) -> Result<()> {
+        initialize_with_app(path, |app, settings| {
+            self(app, LocalInstanceSettings::new(settings))
+        })
+        .await
+    }
+}
+
+impl<Fut> TestFn for fn(TestServer) -> Fut
+where
+    Fut: Future<Output = Result<()>>,
+{
+    async fn run_test(self, path: &'static str) -> Result<()> {
+        test_with_server(path, |_, _, server| self(server)).await
+    }
+}
+
+impl<Fut> TestFn for fn(App, TestServer) -> Fut
+where
+    Fut: Future<Output = Result<()>>,
+{
+    async fn run_test(self, path: &'static str) -> Result<()> {
+        test_with_server(path, |app, _, server| self(app, server)).await
+    }
+}
+
+async fn test_with_server<
+    F: Future<Output = Result<()>>,
+    C: FnOnce(App, InstanceSettings, TestServer) -> F,
+>(
+    path: &'static str,
+    callback: C,
+) -> F::Output {
+    #[derive(Debug, Error)]
+    #[error("Unable to initialize test server")]
+    struct TestServerFailed;
+
+    let span = tracing::info_span!("test.build_server");
+    initialize_with_app(path, |app, settings| {
+        async move {
+            let router = crate::build_axum_router(app.clone());
+            let server = TestServer::new(router)
+                .map_err(|_| capwat_error::Error::unknown_generic(TestServerFailed))?;
+
+            info!("test server is running");
+            callback(app, settings, server).await
+        }
+        .instrument(span)
+    })
+    .await
+}
+
+static JWT_PRIVATE_KEY: &[u8] =
+    include_bytes!(concat!(env!("CARGO_WORKSPACE_DIR"), "/tests/files/jwt.pem"));
+
+async fn initialize_with_app<
+    F: Future<Output = Result<()>>,
+    C: FnOnce(App, InstanceSettings) -> F,
+>(
+    path: &'static str,
+    callback: C,
+) -> F::Output {
+    let span = tracing::info_span!("test.build_app");
+    let future = test_with_pool(path, &capwat_model::DB_MIGRATIONS, |pool| async {
+        let imfs = InMemoryFs::new();
+        let vfs = Vfs::new(
+            imfs.apply_snapshot(
+                "/",
+                VfsSnapshot::build_dir()
+                    .file("jwt.pem", JWT_PRIVATE_KEY)
+                    .build(),
+            )?,
+        );
+
+        let app = App::new_for_tests(pool.into(), vfs);
+
+        let mut conn = app.db_write().await?;
+        let settings = InstanceSettings::setup_local(&mut conn).await?;
+        conn.commit().await.erase_context()?;
+
+        callback(app, settings).await
+    });
+    future.instrument(span).await
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+use crate::extract::LocalInstanceSettings;
 use capwat_api_types::{user::UserSalt, util::EncodedBase64};
 use capwat_error::ApiError;
-use capwat_model::InstanceSettings;
 use capwat_utils::Sensitive;
-use capwat_vfs::{backend::InMemoryFs, Vfs, VfsSnapshot};
 use std::fmt::Debug;
-use tracing::{info, Instrument};
 
 pub trait TestResultExt {
     fn expect_error_json(self) -> serde_json::Value;
 }
 
-impl<T: Debug> TestResultExt for Result<T, ApiError> {
+impl<T: Debug> TestResultExt for std::result::Result<T, ApiError> {
     fn expect_error_json(self) -> serde_json::Value {
         match self {
             Ok(okay) => panic!("unexpected value Ok({okay:?}), expected error"),
@@ -130,43 +252,4 @@ pub mod users {
             user_id: response.user.id,
         }
     }
-}
-
-#[tracing::instrument(name = "test_utils.build_test_app")]
-pub async fn build_test_app() -> (App, InstanceSettings) {
-    let imfs = InMemoryFs::new();
-    let vfs = Vfs::new(imfs.apply_snapshot("/", VfsSnapshot::empty_dir()).unwrap());
-    let _ = capwat_utils::env::load_dotenv(&Vfs::new_std());
-
-    capwat_tracing::init_for_tests();
-    capwat_db::install_error_middleware();
-
-    let span = tracing::info_span!("test.build_app");
-    async {
-        let app = App::new_for_tests(vfs).await;
-
-        let mut conn = app.db_write().await.unwrap();
-        let settings = InstanceSettings::setup_local(&mut conn).await.unwrap();
-        conn.commit().await.unwrap();
-
-        (app, settings)
-    }
-    .instrument(span)
-    .await
-}
-
-#[tracing::instrument(name = "test_utils.build_test_server")]
-pub async fn build_test_server() -> (TestServer, App, InstanceSettings) {
-    let span = tracing::info_span!("test.build_server");
-    let (app, settings) = build_test_app().instrument(span.clone()).await;
-
-    async {
-        let router = crate::build_axum_router(app.clone());
-        let server = TestServer::new(router).unwrap();
-
-        info!("Test server is now running");
-        (server, app, settings)
-    }
-    .instrument(span)
-    .await
 }

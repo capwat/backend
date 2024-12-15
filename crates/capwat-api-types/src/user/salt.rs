@@ -23,14 +23,14 @@ impl UserSalt {
 
 impl Debug for UserSalt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "UserSalt({})", hex::encode(&self.0))
+        write!(f, "UserSalt({})", hex::encode(self.0))
     }
 }
 
 impl Display for UserSalt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use base64::prelude::BASE64_URL_SAFE;
-        Display::fmt(&BASE64_URL_SAFE.encode(&self.0), f)
+        Display::fmt(&BASE64_URL_SAFE.encode(self.0), f)
     }
 }
 
@@ -79,7 +79,7 @@ impl<'de> serde::Deserialize<'de> for UserSalt {
     {
         struct Visitor;
 
-        impl<'de> serde::de::Visitor<'de> for Visitor {
+        impl serde::de::Visitor<'_> for Visitor {
             type Value = UserSalt;
 
             fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

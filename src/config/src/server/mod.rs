@@ -2,7 +2,7 @@ use auth::PartialJwt;
 use capwat_error::ext::{NoContextResultExt, ResultExt};
 use capwat_error::Result;
 use capwat_macros::ConfigParts;
-use capwat_utils::{env, is_running_in_docker};
+use capwat_utils::{env, is_running_in_docker, ProtectedUrl};
 use capwat_vfs::Vfs;
 use doku::Document;
 use serde::Deserialize;
@@ -112,7 +112,7 @@ impl Server {
                 min_connections: None,
                 max_connections: None,
                 readonly_mode: None,
-                url: Some("".into()),
+                url: Some(ProtectedUrl::new("postgres://localhost:5432").unwrap()),
             },
             replica: None,
             enforce_tls: None,
@@ -124,10 +124,7 @@ impl Server {
         let partial = PartialServer {
             auth: PartialAuth {
                 jwt: PartialJwt {
-                    private_key_file: Some(PathBuf::from(concat!(
-                        env!("CARGO_WORKSPACE_DIR"),
-                        "/tests/files/jwt.pem"
-                    ))),
+                    private_key_file: Some(PathBuf::from("/jwt.pem")),
                 },
             },
             database: partial_db,

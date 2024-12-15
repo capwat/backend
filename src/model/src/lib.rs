@@ -8,6 +8,6 @@ pub mod user;
 pub use self::instance::InstanceSettings;
 pub use self::user::User;
 
-use diesel_async_migrations::EmbeddedMigrations;
+use sqlx::migrate::Migrator;
 
-pub const DB_MIGRATIONS: EmbeddedMigrations = diesel_async_migrations::embed_migrations!();
+pub const DB_MIGRATIONS: Migrator = sqlx::migrate!("./migrations");

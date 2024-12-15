@@ -16,7 +16,6 @@ pub use self::app::App;
 use axum::Router;
 
 /// Builds the entire [Axum router] for establishing a Capwat API server.
-#[must_use]
 pub fn build_axum_router(app: App) -> Router {
     self::middleware::apply(app.clone(), self::routes::build_axum_router(app))
 }

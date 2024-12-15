@@ -10,7 +10,7 @@ pub mod serde_exts;
 /// during building a binary or library.
 pub const RELEASE: bool = cfg!(release);
 
-pub use self::protected_string::ProtectedString;
+pub use self::protected_string::{ProtectedString, ProtectedUrl};
 pub use self::sensitive::Sensitive;
 
 //////////////////////////////////////////////////////

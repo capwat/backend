@@ -1,14 +1,15 @@
 use bon::Builder;
+use capwat_macros::SeaTable;
 use chrono::NaiveDateTime;
-use diesel::{AsChangeset, Queryable, Selectable};
+use sqlx::FromRow;
 
 use crate::id::UserId;
 
 mod follower;
 pub use self::follower::*;
 
-#[derive(Debug, Clone, Queryable, Selectable)]
-#[diesel(table_name = crate::postgres::schema::users)]
+#[derive(Debug, Clone, FromRow, PartialEq, Eq, SeaTable)]
+#[sea_table(changeset = "UpdateUser<'_>", table_name = "users")]
 pub struct User {
     pub id: UserId,
     pub created: NaiveDateTime,
@@ -20,9 +21,12 @@ pub struct User {
     pub email: Option<String>,
     pub email_verified: bool,
 
+    #[sea_table(exclude_in_changeset)]
     pub access_key_hash: String,
+    #[sea_table(exclude_in_changeset)]
     pub encrypted_symmetric_key: String,
 
+    #[sea_table(exclude_in_changeset)]
     pub salt: String,
     pub updated: Option<NaiveDateTime>,
 }
@@ -37,8 +41,7 @@ pub struct InsertUser<'a> {
     pub salt: &'a str,
 }
 
-#[derive(Builder, AsChangeset)]
-#[diesel(table_name = crate::postgres::schema::users)]
+#[derive(Builder)]
 pub struct UpdateUser<'a> {
     #[builder(into)]
     pub id: UserId,

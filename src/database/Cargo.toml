@@ -10,22 +10,15 @@ capwat-config.workspace = true
 capwat-error.workspace = true
 capwat-utils.workspace = true
 
+sqlx.workspace = true
+
 async-trait.workspace = true
 chrono.workspace = true
-diesel.workspace = true
-diesel-async.workspace = true
 futures.workspace = true
-rustls.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
-
-bb8 = "0.8.6"
-diesel_async_migrations = "0.15.0"
-rustls-native-certs = "0.8.1"
-tokio-postgres-rustls = "0.13.0"
-tokio-postgres = "0.7.12"
-url = "2.5.3"
+url.workspace = true
 
 [dev-dependencies]
 capwat-crypto.workspace = true

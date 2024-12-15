@@ -68,7 +68,7 @@ async fn process_user_token(
 }
 
 async fn get_user_from_token(
-    conn: &mut PgConnection<'_>,
+    conn: &mut PgConnection,
     app: &App,
     token: &str,
 ) -> Result<SessionUser> {

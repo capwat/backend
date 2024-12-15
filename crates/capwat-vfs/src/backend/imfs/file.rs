@@ -113,7 +113,7 @@ impl InMemoryFsImpl {
 
         // recreate file if it doesn't exists at the moment.
         if options.create {
-            self.create_file(&realpath, None, None, options.truncate)?;
+            self.create_file(&realpath, None, None, options.truncate || options.read)?;
         }
 
         let Some(mut entry) = self.entries.get_mut(&realpath) else {

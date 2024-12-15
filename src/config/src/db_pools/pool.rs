@@ -1,7 +1,7 @@
 use capwat_error::ext::{NoContextResultExt, ResultExt};
 use capwat_error::Result;
 use capwat_macros::ConfigParts;
-use capwat_utils::{env, ProtectedString};
+use capwat_utils::{env, ProtectedUrl};
 use doku::Document;
 use serde::Deserialize;
 use std::num::NonZeroU32;
@@ -56,7 +56,7 @@ pub struct DatabasePool {
         as = "String",
         example = "postgres://user:password@localhost:5432/capwat"
     )]
-    pub url: ProtectedString,
+    pub url: ProtectedUrl,
 }
 
 impl DatabasePool {
@@ -93,7 +93,7 @@ impl PartialDatabasePool {
             env::var_opt_parsed::<bool>(&format!("CAPWAT_DB_{db_type}_READONLY_MODE"))
                 .change_context(DBLoadError)?;
 
-        let url = env::var_opt(&format!("CAPWAT_DB_{db_type}_URL"))
+        let url = env::var_opt_parsed::<ProtectedUrl>(&format!("CAPWAT_DB_{db_type}_URL"))
             .change_context(DBLoadError)
             .attach_printable_lazy(|| {
                 format!(
@@ -106,7 +106,7 @@ impl PartialDatabasePool {
             max_connections,
             min_connections,
             readonly_mode,
-            url: url.map(ProtectedString::new),
+            url,
         })
     }
 

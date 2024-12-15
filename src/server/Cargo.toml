@@ -56,3 +56,4 @@ features = [
 axum-test = "16.4.0"
 assert-json-diff = "*"
 static_assertions.workspace = true
+sqlx.workspace = true

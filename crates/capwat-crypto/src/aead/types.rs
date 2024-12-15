@@ -11,6 +11,12 @@ use crate::default_rng;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Key([u8; 32]);
 
+impl Default for Key {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Key {
     #[must_use]
     pub fn new() -> Self {
@@ -45,7 +51,7 @@ impl Key {
 impl Debug for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut hasher = Sha256::new();
-        hasher.update(&self.0);
+        hasher.update(self.0);
 
         let hash = hex::encode(hasher.finalize());
         write!(f, "Key({})", &hash[0..10])
@@ -83,7 +89,7 @@ impl Nonce {
 
 impl Debug for Nonce {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Nonce({})", hex::encode(&self.0))
+        write!(f, "Nonce({})", hex::encode(self.0))
     }
 }
 

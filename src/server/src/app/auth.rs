@@ -90,20 +90,28 @@ impl App {
             let now = Instant::now();
 
             debug!("reading JWT private key file...");
-            if !vfs.is_using_std_backend() {
-                // generate automatically then.
-                let new_priv = rsa::generate_keypair()?.1;
-                let elapsed = now.elapsed();
-                debug!(?elapsed, "reading JWT private key file done");
-                return Ok(new_priv);
-            }
 
-            let mut file = OpenOptions::new()
-                .create(true)
-                .truncate(false)
-                .read(true)
-                .write(true)
-                .open(vfs, &config.private_key_file)?;
+            let mut file = if vfs.is_using_std_backend() {
+                OpenOptions::new()
+                    .create(true)
+                    .truncate(false)
+                    .read(true)
+                    .write(true)
+                    .open(vfs, &config.private_key_file)
+            } else {
+                #[cfg(test)]
+                {
+                    OpenOptions::new()
+                        .read(true)
+                        .open(vfs, &config.private_key_file)
+                }
+
+                // due to limitations of my in-memory file system implementation
+                #[cfg(not(test))]
+                {
+                    panic!("setting up JWT keys with virtual file system is not yet implemented")
+                }
+            }?;
 
             let bytes_read = file.read_to_string(&mut buffer)?;
             let rsa_key = if bytes_read > 0 {
@@ -126,16 +134,8 @@ impl App {
             Ok(rsa_key)
         }
 
-        // Because generating RSA keys can be slow from performing units, we'll just
-        // have to create it from scratch at the expense of having that file :)
-        let default_vfs = if cfg!(test) {
-            Vfs::new_std()
-        } else {
-            vfs.clone()
-        };
-
         let jwt = &config.auth.jwt;
-        let priv_key = read_jwt_priv_key_file(jwt, &default_vfs)
+        let priv_key = read_jwt_priv_key_file(jwt, vfs)
             .attach_printable("could not generate JWT key files")?;
 
         let priv_key_buffer = priv_key.to_pkcs1_pem(rsa::LineEnding::LF)?;
