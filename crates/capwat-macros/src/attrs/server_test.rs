@@ -30,9 +30,7 @@ pub fn apply(tokens: TokenStream) -> syn::Result<TokenStream> {
             #input
 
             let runner: fn(#(#fn_arg_types),*) -> _ = #inner_ident;
-            if let Err(error) = runner.run_test(module_path!()).await {
-                panic!("{error:#}");
-            }
+            runner.run_test(module_path!()).await;
         }
     })
 }

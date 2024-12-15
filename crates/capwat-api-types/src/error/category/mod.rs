@@ -56,12 +56,12 @@ capwat_macros::define_error_category! {
         LoginUserFailed {
             /// This variant allows the user to derive their access key hash
             /// by providing them with salt. However, if the user entered invalid
-            /// credientials then they should expect an invalid user salt.
+            /// credentials then they should expect an invalid user salt.
             AccessKeyRequired(AccessKeyRequiredInfo),
 
             /// The graveyard error! Whoops! You should try another combination
             /// of usernames or passphrases to hack someone's account!
-            InvalidCredientials,
+            InvalidCredentials,
         },
 
         /// Publishing a post failed!

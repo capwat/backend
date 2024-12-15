@@ -5,6 +5,7 @@ use capwat_db::pool::PgConnection;
 use capwat_error::ext::NoContextResultExt;
 use capwat_error::{ApiError, ApiErrorCategory};
 use capwat_model::id::UserId;
+use capwat_model::user::{UserAggregates, UserView};
 use capwat_model::User;
 use std::ops::Deref;
 use thiserror::Error;
@@ -13,17 +14,12 @@ use crate::App;
 
 #[derive(Clone)]
 pub struct SessionUser {
+    pub aggregates: UserAggregates,
     pub user: User,
 }
 
-impl SessionUser {
-    #[must_use]
-    pub fn into_inner(self) -> User {
-        self.user
-    }
-}
-
 impl Deref for SessionUser {
+    // for compatibility purposes with the entire codebase
     type Target = User;
 
     fn deref(&self) -> &Self::Target {
@@ -40,12 +36,15 @@ impl SessionUser {
         conn: &mut PgConnection,
         id: UserId,
     ) -> capwat_error::Result<Self, GetSessionUserError> {
-        let user = User::find(conn, id)
+        let user_view = UserView::find(conn, id)
             .await
             .change_context(GetSessionUserError)?;
 
-        if let Some(user) = user {
-            Ok(Self { user })
+        if let Some(user_view) = user_view {
+            Ok(Self {
+                aggregates: user_view.aggregates,
+                user: user_view.user,
+            })
         } else {
             let error =
                 capwat_error::Error::new(ApiErrorCategory::AccessDenied, GetSessionUserError)
@@ -60,7 +59,7 @@ impl std::fmt::Debug for SessionUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // for diagnostic purposes
         f.debug_struct("SessionUser")
-            .field("id", &self.user.id)
+            .field("id", &self.id)
             .finish_non_exhaustive()
     }
 }

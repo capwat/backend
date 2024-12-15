@@ -1,10 +1,12 @@
 use bon::Builder;
+use capwat_macros::SeaTable;
 use chrono::NaiveDateTime;
 use sqlx::FromRow;
 
 use crate::id::{PostId, UserId};
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone, FromRow, SeaTable)]
+#[sea_table(table_name = "posts")]
 pub struct Post {
     pub id: PostId,
     pub created: NaiveDateTime,

@@ -18,6 +18,7 @@ pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let global_config = read_global_config(&input)?;
     let (_, ident_enum_tokens) = generate_ident_enum(&global_config, &input, data)?;
 
+    let view_columns_impl = generate_view_columns(&input, &fields);
     let changeset_impl = generate_changeset_impl(
         &input,
         global_config.changeset_type.as_ref(),
@@ -28,7 +29,35 @@ pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     Ok(quote! {
         #ident_enum_tokens
         #changeset_impl
+        #view_columns_impl
     })
+}
+
+fn generate_view_columns(input: &DeriveInput, fields: &[Field]) -> TokenStream {
+    let input_name = &input.ident;
+    let ident_name = syn::Ident::new(&format!("{}Ident", input.ident), input.span());
+
+    let mut entries = Vec::new();
+    for field in fields {
+        let field_ident = syn::Ident::new(
+            &field.ident.to_string().to_pascal_case(),
+            field.ident.span(),
+        );
+        entries.push(quote! {
+            (prefix.clone(), #ident_name::#field_ident),
+        });
+    }
+
+    quote! {
+        impl #input_name {
+            #[must_use]
+            pub(crate) fn make_view_columns<T: sea_query::Iden + Clone>(prefix: T) -> Vec<(T, #ident_name)> {
+                vec![
+                    #(#entries)*
+                ]
+            }
+        }
+    }
 }
 
 fn generate_changeset_impl(
@@ -173,7 +202,7 @@ fn generate_ident_enum(
     let ident_name = syn::Ident::new(&format!("{}Ident", input.ident), input.span());
     let tokens = quote! {
         #[allow(unused)]
-        #[derive(sea_query::Iden)]
+        #[derive(Debug, Clone, sea_query::Iden)]
         pub(crate) enum #ident_name {
             #(#fields,)*
         }

@@ -3,13 +3,13 @@ use crate::extract::SessionUser;
 pub struct LocalProfile;
 
 impl LocalProfile {
-    #[tracing::instrument(skip(self), name = "services.users.profile.me")]
-    pub async fn perform(self, user: SessionUser) -> LocalProfileResponse {
-        LocalProfileResponse { user }
+    #[tracing::instrument(skip_all, name = "services.users.profile.me")]
+    pub async fn perform(self, session_user: SessionUser) -> LocalProfileResponse {
+        LocalProfileResponse { session_user }
     }
 }
 
 #[must_use]
 pub struct LocalProfileResponse {
-    pub user: SessionUser,
+    pub session_user: SessionUser,
 }

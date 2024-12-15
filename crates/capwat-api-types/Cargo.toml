@@ -12,6 +12,7 @@ server = ["axum", "bon", "tracing"]
 [dependencies]
 base64.workspace = true
 capwat-macros.workspace = true
+chrono.workspace = true
 either = { version = "1.13.0", features = ["serde"] }
 hex.workspace = true
 paste.workspace = true

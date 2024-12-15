@@ -9,6 +9,9 @@ use crate::id::UserId;
 use crate::user::{InsertUser, UpdateUser, UserIdent};
 use crate::User;
 
+mod aggregates;
+mod view;
+
 impl User {
     #[tracing::instrument(skip_all, name = "db.users.find")]
     pub async fn find(conn: &mut PgConnection, id: UserId) -> Result<Option<User>> {
@@ -51,7 +54,7 @@ impl User {
             .fetch_optional(conn)
             .await
             .erase_context()
-            .attach_printable("could not find user by their login credientials")
+            .attach_printable("could not find user by their login credentials")
     }
 
     #[tracing::instrument(skip_all, name = "db.users.check_email_taken")]
@@ -162,9 +165,21 @@ mod tests {
     use super::*;
     use capwat_crypto::client::RegisterUserParams;
     use capwat_db::pool::PgPooledConnection;
+    use capwat_utils::cache::StaticValueCache;
+    use std::time::Duration;
 
-    async fn generate_alice(conn: &mut PgConnection) -> Result<(User, RegisterUserParams)> {
-        let alice_params = capwat_crypto::client::generate_register_user_params(b"alice");
+    pub async fn generate_alice(conn: &mut PgConnection) -> Result<(User, RegisterUserParams)> {
+        static CACHE: StaticValueCache<RegisterUserParams> =
+            StaticValueCache::new(Duration::from_secs(24 * 60 * 60));
+
+        let alice_params = if let Some(cache) = CACHE.get().await {
+            cache
+        } else {
+            let new_params = capwat_crypto::client::generate_register_user_params(b"alice");
+            CACHE.set(new_params.clone());
+            new_params
+        };
+
         let user = InsertUser::builder()
             .name("alice")
             .email("alice@example.com")

@@ -14,7 +14,7 @@ impl IntoResponse for Error {
             ErrorCategory::Outage => StatusCode::SERVICE_UNAVAILABLE,
             ErrorCategory::InstanceClosed => StatusCode::SERVICE_UNAVAILABLE,
             ErrorCategory::LoginUserFailed(data) => match data {
-                LoginUserFailed::InvalidCredientials => StatusCode::FORBIDDEN,
+                LoginUserFailed::InvalidCredentials => StatusCode::FORBIDDEN,
                 LoginUserFailed::AccessKeyRequired(..) => StatusCode::BAD_REQUEST,
             },
             ErrorCategory::AccessDenied => StatusCode::UNAUTHORIZED,

@@ -4,7 +4,8 @@ use capwat_server::App;
 use capwat_utils::{env::load_dotenv, future::Retry};
 use capwat_vfs::Vfs;
 use futures::TryFutureExt;
-use std::{net::SocketAddr, time::Duration};
+use std::net::SocketAddr;
+use std::time::Duration;
 use thiserror::Error;
 use tokio::net::TcpListener;
 use tracing::{debug, info, warn, Instrument};
@@ -21,6 +22,18 @@ async fn start_capwat_server(config: capwat_config::Server, vfs: Vfs) -> Result<
 
     // Setup the entire instance separately on a different thread...
     let app = App::new(config, vfs).change_context(StartError)?;
+    tokio::spawn({
+        let app = app.clone();
+        let span = tracing::info_span!("instance.check_clock_inconsistencies");
+        check_clock_inconsistences(app)
+            .instrument(span.clone())
+            .inspect_err(move |error| {
+                span.in_scope(|| {
+                    warn!(%error, "Could not check for timing inconsistencies between the server and the primary/replica database");
+                })
+            })
+    });
+
     tokio::spawn({
         let app = app.clone();
         let span = tracing::info_span!("instance.setup");
@@ -67,6 +80,33 @@ async fn start_capwat_server(config: capwat_config::Server, vfs: Vfs) -> Result<
     Ok(())
 }
 
+async fn check_clock_inconsistences(app: App) -> Result<()> {
+    debug!("checking for timestamp accuracy from the database and the server...");
+
+    Retry::builder("Check for timestamp accuracy", || async {
+        let (matched, our_timestamp, db_timestamp) = capwat_server::util::check_clocks(&app).await.unwrap();
+        if !matched {
+            warn!(
+                db.timestamp = %db_timestamp,
+                instance.timestamp = %our_timestamp,
+                "Inconsistent clock time for both the database and server! Please fix the clock time of the server, database or \
+                both of them to resolve this issue as timestamps really matters to users."
+            );
+        } else {
+            debug!("database's and server's UTC clock time are matched");
+        }
+
+        Ok::<_, capwat_error::Error>(matched)
+    })
+    .max_retries(3)
+    .wait(Duration::from_secs(5))
+    .build()
+    .run()
+    .await?;
+
+    Ok(())
+}
+
 async fn setup_instance(app: App) -> Result<()> {
     debug!("setting up Capwat instance settings...");
 
@@ -76,7 +116,8 @@ async fn setup_instance(app: App) -> Result<()> {
 
         let settings = InstanceSettings::get_local(&mut conn).await?;
         if settings.require_captcha && app.config.hcaptcha.is_none() {
-            warn!("hCaptcha integration is not configured but the instance settings requires CAPTCHA. Please configure hCaptcha or turn off `Require CAPTCHA` in instance settings.");
+            warn!("hCaptcha integration is not configured but the instance settings requires CAPTCHA. \
+            Please configure hCaptcha or turn off `Require CAPTCHA` in instance settings.");
         }
         conn.commit().await?;
 

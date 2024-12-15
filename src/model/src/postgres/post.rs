@@ -1,19 +1,24 @@
-use capwat_db::pool::PgConnection;
+use capwat_error::ext::{NoContextResultExt, ResultExt};
 use capwat_error::Result;
+use sea_query::{Asterisk, Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
+use sqlx::PgConnection;
 use thiserror::Error;
 
 use crate::id::PostId;
-use crate::post::{InsertPost, Post};
-
-use super::prelude::*;
-use super::schema::posts;
+use crate::post::{InsertPost, Post, PostIdent};
 
 impl Post {
     #[tracing::instrument(skip_all, name = "db.posts.find")]
-    pub async fn find(conn: &mut PgConnection<'_>, id: PostId) -> Result<Self> {
-        posts::table
-            .filter(posts::id.eq(id))
-            .get_result::<Self>(&mut *conn)
+    pub async fn find(conn: &mut PgConnection, id: PostId) -> Result<Option<Self>> {
+        let (sql, values) = Query::select()
+            .column(Asterisk)
+            .from(PostIdent::Posts)
+            .and_where(Expr::col(PostIdent::Id).eq(id.0))
+            .build_sqlx(PostgresQueryBuilder);
+
+        sqlx::query_as_with::<_, Self, _>(&sql, values)
+            .fetch_optional(conn)
             .await
             .erase_context()
             .attach_printable("could not find post by id")
@@ -26,13 +31,16 @@ pub struct InsertPostError;
 
 impl InsertPost<'_> {
     #[tracing::instrument(skip_all, name = "db.posts.insert")]
-    pub async fn insert(&self, conn: &mut PgConnection<'_>) -> Result<Post, InsertPostError> {
-        diesel::insert_into(posts::table)
-            .values((
-                posts::author_id.eq(self.author_id),
-                posts::content.eq(self.content),
-            ))
-            .get_result::<Post>(&mut *conn)
+    pub async fn insert(&self, conn: &mut PgConnection) -> Result<Post, InsertPostError> {
+        let (sql, values) = Query::insert()
+            .into_table(PostIdent::Posts)
+            .columns([PostIdent::AuthorId, PostIdent::Content])
+            .values_panic([self.author_id.0.into(), self.content.into()])
+            .returning_all()
+            .build_sqlx(PostgresQueryBuilder);
+
+        sqlx::query_as_with::<_, Post, _>(&sql, values)
+            .fetch_one(conn)
             .await
             .change_context(InsertPostError)
     }

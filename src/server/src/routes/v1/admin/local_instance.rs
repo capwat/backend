@@ -14,6 +14,7 @@ pub async fn get_settings(
         .await?;
 
     let response = InstanceSettingsResponse {
+        last_updated: response.updated.unwrap_or(response.created).into(),
         posts: PostSettings {
             max_characters: response.post_max_characters as u16,
         },

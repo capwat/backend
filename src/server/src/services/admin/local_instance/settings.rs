@@ -13,6 +13,7 @@ impl GetSettings {
         inner: LocalInstanceSettings,
     ) -> Result<InstanceSettings, ApiError> {
         check_if_admin(&user)?;
+
         Ok((&*inner.0).clone())
     }
 }

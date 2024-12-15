@@ -11,6 +11,8 @@ use crate::id::InstanceId;
 use crate::instance::{InstanceSettingsIdent, RegistrationMode, UpdateInstanceSettings};
 use crate::InstanceSettings;
 
+mod aggregates;
+
 impl InstanceSettings {
     #[tracing::instrument(skip_all, name = "db.instance.settings.get_local")]
     pub async fn get_local(conn: &mut PgConnection) -> Result<InstanceSettings> {
@@ -85,19 +87,6 @@ impl UpdateInstanceSettings {
             .and_where(Expr::col(InstanceSettingsIdent::Id).eq(compare.0))
             .returning_all()
             .build_sqlx(PostgresQueryBuilder)
-    }
-
-    #[tracing::instrument(skip_all, name = "db.instance.settings.update")]
-    pub async fn perform(
-        &self,
-        conn: &mut PgConnection,
-        id: InstanceId,
-    ) -> Result<InstanceSettings, UpdateInstanceSettingsError> {
-        let (sql, values) = self.make_changeset(id);
-        sqlx::query_as_with::<_, InstanceSettings, _>(&sql, values)
-            .fetch_one(conn)
-            .await
-            .change_context(UpdateInstanceSettingsError)
     }
 
     #[tracing::instrument(skip_all, name = "db.instance.settings.update_local")]

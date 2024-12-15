@@ -5,8 +5,13 @@ use sqlx::FromRow;
 
 use crate::id::UserId;
 
+mod aggregates;
 mod follower;
+mod view;
+
+pub use self::aggregates::*;
 pub use self::follower::*;
+pub use self::view::*;
 
 #[derive(Debug, Clone, FromRow, PartialEq, Eq, SeaTable)]
 #[sea_table(changeset = "UpdateUser<'_>", table_name = "users")]

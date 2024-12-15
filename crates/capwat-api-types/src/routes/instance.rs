@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::util::Timestamp;
+
 /// A response after `GET /admin/instance/settings` has successfully performed.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct InstanceSettingsResponse {
+    pub last_updated: Timestamp,
     pub posts: PostSettings,
     pub users: UserSettings,
 }

@@ -186,6 +186,11 @@ impl<C: Context> From<C> for Error<C> {
 impl<C> Error<C> {
     pub fn into_api_error(self) -> capwat_api_types::Error {
         use capwat_api_types::Error as ApiError;
+        #[cfg(all(feature = "server"))]
+        {
+            use tracing::debug;
+            debug!("caught unexpected error while performing a request: {self:?}");
+        }
         match self.get_category() {
             ErrorCategory::Unknown => self.inner.span.in_scope(|| {
                 tracing::error!(error = %self, "Caught internal server error");

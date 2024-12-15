@@ -86,10 +86,16 @@ opt-level = 3
 [profile.dev.package.digest]
 opt-level = 3
 
+[profile.dev.package.hmac]
+opt-level = 3
+
 [profile.dev.package.hybrid-array]
 opt-level = 3
 
 [profile.dev.package.ml-kem]
+opt-level = 3
+
+[profile.dev.package.password-hash]
 opt-level = 3
 
 [profile.dev.package.pbkdf2]

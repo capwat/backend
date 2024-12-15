@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::util::Timestamp;
+
 /// Publishes a post.
 ///
 /// **ROUTE**: `POST /posts`
@@ -10,8 +12,9 @@ pub struct PublishPost {
 
 /// A response after `POST /posts` has successfully performed.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct CreatePostResponse {
+pub struct PublishPostResponse {
     pub id: i64,
+    pub created_at: Timestamp,
 }
 
 /// Edit a post from a specific ID.

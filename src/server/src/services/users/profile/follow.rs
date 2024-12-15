@@ -38,3 +38,121 @@ impl FollowUser {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{self, TestResultExt};
+
+    use assert_json_diff::assert_json_include;
+    use serde_json::json;
+
+    #[capwat_macros::api_test]
+    async fn should_follow_user(app: App) {
+        let alice = test_utils::users::get_session_data()
+            .app(&app)
+            .name("alice")
+            .call()
+            .await;
+
+        let bob = test_utils::users::register()
+            .app(&app)
+            .name("bob")
+            .call()
+            .await;
+
+        let request = FollowUser {
+            target: Sensitive::new(bob.user_id),
+        };
+
+        request
+            .perform(&app, &alice.get_session_user(&app).await)
+            .await
+            .unwrap();
+    }
+
+    #[capwat_macros::api_test]
+    async fn should_follow_user_if_done_repeatedly(app: App) {
+        let alice = test_utils::users::get_session_data()
+            .app(&app)
+            .name("alice")
+            .call()
+            .await;
+
+        let bob = test_utils::users::register()
+            .app(&app)
+            .name("bob")
+            .call()
+            .await;
+
+        let request = FollowUser {
+            target: Sensitive::new(bob.user_id),
+        };
+
+        request
+            .perform(&app, &alice.get_session_user(&app).await)
+            .await
+            .unwrap();
+
+        let request = FollowUser {
+            target: Sensitive::new(bob.user_id),
+        };
+
+        request
+            .perform(&app, &alice.get_session_user(&app).await)
+            .await
+            .unwrap();
+    }
+
+    #[capwat_macros::api_test]
+    async fn should_reject_if_target_user_not_found(app: App) {
+        let alice = test_utils::users::get_session_data()
+            .app(&app)
+            .name("alice")
+            .call()
+            .await;
+
+        let request = FollowUser {
+            target: Sensitive::new(UserId(23000000)),
+        };
+
+        let error = request
+            .perform(&app, &alice.get_session_user(&app).await)
+            .await
+            .expect_error_json();
+
+        assert_json_include!(
+            actual: error,
+            expected: json!({
+                "code": "not_found",
+                "message": "Could not find user specified",
+            }),
+        )
+    }
+
+    #[capwat_macros::api_test]
+    async fn should_not_follow_themselves(app: App) {
+        let alice = test_utils::users::get_session_data()
+            .app(&app)
+            .name("alice")
+            .call()
+            .await;
+
+        let request = FollowUser {
+            target: Sensitive::new(alice.user.id),
+        };
+
+        let error = request
+            .perform(&app, &alice.get_session_user(&app).await)
+            .await
+            .expect_error_json();
+
+        assert_json_include!(
+            actual: error,
+            expected: json!({
+                "code": "invalid_request",
+                "message": "You cannot follow yourself",
+            }),
+        )
+    }
+}

@@ -1,14 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 use crate::user::UserSalt;
-use crate::util::EncodedBase64;
+use crate::util::{EncodedBase64, Timestamp};
 
 /// A response after `GET /users/@me` or `GET /users/:id` has successfully performed.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct LocalUserProfile {
     pub id: i64,
+    pub joined_at: Timestamp,
     pub name: String,
     pub display_name: Option<String>,
+
+    pub followers: u64,
+    pub following: u64,
+    pub posts: u64,
 }
 
 /// Log in as a user to Capwat.
@@ -31,7 +36,9 @@ pub struct LoginUser {
 /// [logging in as a user]: LoginUser
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct LoginUserResponse {
+    pub id: i64,
     pub name: String,
+    pub joined_at: Timestamp,
     pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_verified: Option<bool>,

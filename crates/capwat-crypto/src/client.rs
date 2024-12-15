@@ -4,7 +4,7 @@ use capwat_api_types::util::EncodedBase64;
 use crate::aead;
 use crate::derive::derive_from_passphrase;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegisterUserParams {
     pub salt: UserSalt,
     pub access_key_hash: EncodedBase64,

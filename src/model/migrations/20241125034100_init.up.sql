@@ -49,6 +49,7 @@ CREATE TABLE instance_settings (
 
     updated TIMESTAMP
 );
+INSERT INTO instance_settings (id) VALUES (0);
 
 CREATE TABLE followers (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -67,4 +68,3 @@ CREATE TABLE posts (
     content TEXT NOT NULL,
     updated TIMESTAMP
 );
-

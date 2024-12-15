@@ -1,14 +1,17 @@
+#![feature(duration_constructors)]
 mod extract;
-mod util;
 
 pub mod app;
 pub mod auth;
 pub mod middleware;
 pub mod routes;
 pub mod services;
+pub mod util;
 
+/// It contains useful utilities for testing the entire server
+/// and the implementation of easy `#[capwat_macros::server_test]`
+/// when expanded.
 #[cfg(test)]
-#[path = "util/test.rs"]
 pub(crate) mod test_utils;
 
 pub use self::app::App;

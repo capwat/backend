@@ -2,6 +2,8 @@ use moka::future::Cache;
 use std::sync::OnceLock;
 use std::time::Duration;
 
+pub use moka::future::Cache as MapCache;
+
 pub struct StaticValueCache<T> {
     inner: OnceLock<Cache<(), T>>,
     time_to_live: Duration,

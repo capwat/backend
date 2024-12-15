@@ -56,7 +56,7 @@ pub fn postgres_query_test(_args: TokenStream, item: TokenStream) -> TokenStream
 }
 
 #[proc_macro_attribute]
-pub fn server_test(_args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn api_test(_args: TokenStream, item: TokenStream) -> TokenStream {
     match self::attrs::server_test::apply(item.into()) {
         Ok(okay) => okay,
         Err(error) => error.into_compile_error(),
