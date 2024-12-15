@@ -22,7 +22,7 @@ impl Follower {
         conn: &mut PgConnection,
         source_id: UserId,
         target_id: UserId,
-    ) -> Result<bool, UnfollowError> {
+    ) -> Result<(), UnfollowError> {
         let (sql, values) = Query::delete()
             .from_table(FollowerIdent::Followers)
             .and_where(
@@ -36,8 +36,9 @@ impl Follower {
         sqlx::query_as_with::<_, Self, _>(&sql, values)
             .fetch_optional(conn)
             .await
-            .map(|v| v.is_some())
-            .change_context(UnfollowError)
+            .change_context(UnfollowError)?;
+
+        Ok(())
     }
 
     #[tracing::instrument(skip_all, name = "db.followers.follow")]

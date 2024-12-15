@@ -69,3 +69,16 @@ pub async fn follow(
 
     Ok(StatusCode::OK.into_response())
 }
+
+pub async fn unfollow(
+    app: App,
+    user: SessionUser,
+    Path(target_id): Path<UserId>,
+) -> Result<Response, ApiError> {
+    let request = services::users::profile::UnfollowUser {
+        target: target_id.into(),
+    };
+    request.perform(&app, &user).await?;
+
+    Ok(StatusCode::OK.into_response())
+}

@@ -14,6 +14,7 @@ pub fn build_axum_router(app: App) -> Router {
             get(self::admin::local_instance::get_settings),
         )
         .route("/users/:id/follow", post(self::users::profile::follow))
+        .route("/users/:id/unfollow", post(self::users::profile::unfollow))
         .route("/users/@me", get(self::users::profile::local::view))
         .route(
             "/users/@me/posts",
