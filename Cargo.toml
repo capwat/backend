@@ -1,11 +1,11 @@
 [workspace]
 members = [
     "crates/*",
-    "src/config",
-    "src/database",
-    "src/model",
-    "src/server",
-    "src/tracing",
+    # "src/config",
+    # "src/database",
+    # "src/model",
+    # "src/server",
+    # "src/tracing",
 ]
 resolver = "2"
 

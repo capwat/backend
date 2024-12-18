@@ -1,47 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::user::UserSalt;
-use crate::util::{EncodedBase64, Pagination, Timestamp};
+use crate::util::{EncodedBase64, Timestamp};
 
-/// Get a list of users who got followed by the current user.
-///
-/// **ROUTE**: `GET /users/@me/following`
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GetCurrentUserFollowing {
-    #[serde(default, flatten)]
-    pub pagination: Pagination,
-}
-
-/// Get a list of posts posted from the current user.
-///
-/// **ROUTE**: `GET /users/@me/posts`
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GetCurrentUserPosts {
-    #[serde(default, flatten)]
-    pub pagination: Pagination,
-}
-
-/// Get a list of users who got followed to the current user.
-///
-/// **ROUTE**: `GET /users/@me/followers`
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GetCurrentUserFollowers {
-    #[serde(default, flatten)]
-    pub pagination: Pagination,
-}
-
-/// A response after `GET /users/@me` or `GET /users/:id` has successfully performed.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct LocalUserProfile {
-    pub id: i64,
-    pub joined_at: Timestamp,
-    pub name: String,
-    pub display_name: Option<String>,
-
-    pub followers: u64,
-    pub following: u64,
-    pub posts: u64,
-}
+mod current_user;
+pub use self::current_user::*;
 
 /// Log in as a user to Capwat.
 ///
@@ -102,3 +65,8 @@ pub struct RegisterUserResponse {
     /// to the Capwat instance.
     pub verify_email: bool,
 }
+
+crate::should_impl_primitive_traits!(LoginUser);
+crate::should_impl_primitive_traits!(LoginUserResponse);
+crate::should_impl_primitive_traits!(RegisterUser);
+crate::should_impl_primitive_traits!(RegisterUserResponse);

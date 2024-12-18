@@ -1,35 +1,24 @@
 use serde::{Deserialize, Serialize};
 
-use crate::util::{Pagination, Timestamp};
-
-/// Get a list of posts published from the user's followers.
+/// Get a list of posts recommended by Capwat for the current user.
 ///
-/// **ROUTE**: `GET /posts/feed?limit=<limit>&offset=<offset>`
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct GetPostFeed {
-    #[serde(default, flatten)]
-    pub pagination: Pagination,
-}
-
-/// Publishes a post.
+/// The algorithm to get the recommended posts for the user will
+/// depend on the instance administrators how they configure it.
 ///
-/// **ROUTE**: `POST /user/@me/posts`
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct PublishPost {
-    pub content: String,
-}
-
-/// A response after `POST /user/@me/posts` has successfully performed.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct PublishPostResponse {
-    pub id: i64,
-    pub created_at: Timestamp,
-}
-
-/// Edit a post from a specific ID.
+/// By default, it chooses posts from whom got followed by the current
+/// user and sorts it by its creation time to avoid exploiting/over-optimizing
+/// the Capwat algorithm for content creators but again, it depends on how the
+/// instance administrators will configure it and it must be kept
+/// secret to everyone.
 ///
-/// **ROUTE**: `PATCH /user/@me/posts/{}`
-#[derive(Debug)]
-pub struct EditPost {
-    pub content: String,
+/// This object must be used as query parameters to perform
+/// this request.
+///
+/// **ROUTE**: `GET /posts/recommendations`
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ListPostRecommendations {
+    /// The highest post ID in the previous page.
+    pub after: Option<i64>,
+    /// Maximum number of posts to fetch (1-15)
+    pub limit: Option<u64>,
 }

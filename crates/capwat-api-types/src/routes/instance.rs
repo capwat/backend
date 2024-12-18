@@ -22,3 +22,7 @@ pub struct UserSettings {
     pub requires_email_registration: bool,
     pub requires_email_verification: bool,
 }
+
+crate::should_impl_primitive_traits!(InstanceSettingsResponse);
+crate::should_impl_primitive_traits!(PostSettings);
+crate::should_impl_primitive_traits!(UserSettings);
