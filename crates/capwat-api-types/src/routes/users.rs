@@ -1,7 +1,34 @@
 use serde::{Deserialize, Serialize};
 
 use crate::user::UserSalt;
-use crate::util::{EncodedBase64, Timestamp};
+use crate::util::{EncodedBase64, Pagination, Timestamp};
+
+/// Get a list of users who got followed by the current user.
+///
+/// **ROUTE**: `GET /users/@me/following`
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct GetCurrentUserFollowing {
+    #[serde(default, flatten)]
+    pub pagination: Pagination,
+}
+
+/// Get a list of posts posted from the current user.
+///
+/// **ROUTE**: `GET /users/@me/posts`
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct GetCurrentUserPosts {
+    #[serde(default, flatten)]
+    pub pagination: Pagination,
+}
+
+/// Get a list of users who got followed to the current user.
+///
+/// **ROUTE**: `GET /users/@me/followers`
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct GetCurrentUserFollowers {
+    #[serde(default, flatten)]
+    pub pagination: Pagination,
+}
 
 /// A response after `GET /users/@me` or `GET /users/:id` has successfully performed.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

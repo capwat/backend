@@ -18,7 +18,7 @@ pub struct PublishUserPostResponse {
 }
 
 impl PublishUserPost<'_> {
-    #[tracing::instrument(skip_all, fields(self), name = "services.users.profile.post")]
+    #[tracing::instrument(skip_all, fields(self), name = "services.users.me.publish_post")]
     pub async fn perform(
         self,
         app: &App,

@@ -160,14 +160,15 @@ impl InsertUser<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use capwat_crypto::client::RegisterUserParams;
+    #[cfg(test)]
     use capwat_db::pool::PgPooledConnection;
     use capwat_utils::cache::StaticValueCache;
     use std::time::Duration;
 
+    #[allow(unused)]
     pub async fn generate_alice(conn: &mut PgConnection) -> Result<(User, RegisterUserParams)> {
         static CACHE: StaticValueCache<RegisterUserParams> =
             StaticValueCache::new(Duration::from_secs(24 * 60 * 60));
@@ -193,6 +194,36 @@ mod tests {
         Ok((user, alice_params))
     }
 
+    #[allow(unused)]
+    pub async fn generate_user(
+        conn: &mut PgConnection,
+        name: &str,
+    ) -> Result<(User, RegisterUserParams)> {
+        static CACHE: StaticValueCache<RegisterUserParams> =
+            StaticValueCache::new(Duration::from_secs(24 * 60 * 60));
+
+        let params = if let Some(cache) = CACHE.get().await {
+            cache
+        } else {
+            let new_params = capwat_crypto::client::generate_register_user_params(name.as_bytes());
+            CACHE.set(new_params.clone());
+            new_params
+        };
+
+        let user = InsertUser::builder()
+            .name(name)
+            .email(name)
+            .access_key_hash(&params.access_key_hash.encode())
+            .encrypted_symmetric_key(&params.encrypted_symmetric_key.encode())
+            .salt(&params.salt.to_string())
+            .build()
+            .insert(conn)
+            .await?;
+
+        Ok((user, params))
+    }
+
+    #[cfg(test)]
     #[capwat_macros::postgres_query_test]
     async fn check_username_taken(mut conn: PgPooledConnection) -> Result<()> {
         assert!(!User::check_username_taken(&mut conn, "alice").await?);
@@ -203,6 +234,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(test)]
     #[capwat_macros::postgres_query_test]
     async fn check_email_taken(mut conn: PgPooledConnection) -> Result<()> {
         assert!(!User::check_email_taken(&mut conn, "alice@example.com").await?);
@@ -213,6 +245,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(test)]
     #[capwat_macros::postgres_query_test]
     async fn should_find_by_id(mut conn: PgPooledConnection) -> Result<()> {
         let (alice, _) = generate_alice(&mut conn).await?;
@@ -222,6 +255,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(test)]
     #[capwat_macros::postgres_query_test]
     async fn should_find_by_login(mut conn: PgPooledConnection) -> Result<()> {
         generate_alice(&mut conn).await?;
@@ -240,6 +274,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(test)]
     #[capwat_macros::postgres_query_test]
     async fn should_update(mut conn: PgPooledConnection) -> Result<()> {
         let (old_alice, _) = generate_alice(&mut conn).await?;
@@ -269,6 +304,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(test)]
     #[capwat_macros::postgres_query_test]
     async fn should_insert(mut conn: PgPooledConnection) -> Result<()> {
         let (user, alice_params) = generate_alice(&mut conn).await?;

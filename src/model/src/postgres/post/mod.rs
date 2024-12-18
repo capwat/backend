@@ -8,6 +8,8 @@ use thiserror::Error;
 use crate::id::PostId;
 use crate::post::{InsertPost, Post, PostIdent};
 
+mod view;
+
 impl Post {
     #[tracing::instrument(skip_all, name = "db.posts.find")]
     pub async fn find(conn: &mut PgConnection, id: PostId) -> Result<Option<Self>> {

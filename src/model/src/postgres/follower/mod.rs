@@ -8,6 +8,8 @@ use thiserror::Error;
 use crate::id::UserId;
 use crate::user::{Follower, FollowerIdent};
 
+mod view;
+
 #[derive(Debug, Error)]
 #[error("Could not follow source user to target user")]
 pub struct FollowError;

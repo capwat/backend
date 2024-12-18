@@ -5,7 +5,10 @@ use sqlx::FromRow;
 
 use crate::id::{PostId, UserId};
 
-#[derive(Debug, Clone, FromRow, SeaTable)]
+mod view;
+pub use self::view::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, FromRow, SeaTable)]
 #[sea_table(table_name = "posts")]
 pub struct Post {
     pub id: PostId,

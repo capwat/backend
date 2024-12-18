@@ -7,6 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 capwat-api-types = { workspace = true, features = ["server"] }
+capwat-crypto.workspace = true
 capwat-db.workspace = true
 capwat-error.workspace = true
 capwat-macros.workspace = true
@@ -23,7 +24,6 @@ sea-query-binder = { version = "0.7.0", features = ["sqlx-postgres", "with-chron
 sqlx.workspace = true
 
 [dev-dependencies]
-capwat-crypto.workspace = true
 capwat-tracing.workspace = true
 capwat-vfs.workspace = true
 tokio.workspace = true

@@ -5,3 +5,6 @@
 
 **/jwt.private.pem
 **/capwat.toml
+
+# rust nightly crash logs
+rustc-ice-*

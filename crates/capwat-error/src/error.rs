@@ -208,6 +208,8 @@ impl<C> Error<C> {
             }),
             ErrorCategory::AccessDenied => ApiError::new(ErrorCategory::AccessDenied),
             ErrorCategory::NotFound => ApiError::new(ErrorCategory::NotFound),
+            ErrorCategory::ExpiredToken => ApiError::new(ErrorCategory::ExpiredToken)
+                .message("Your authentication token has been expired. Please renew your authentication token or login to try again."),
             cat => panic!("unhandled category: {cat:?}"),
         }
     }

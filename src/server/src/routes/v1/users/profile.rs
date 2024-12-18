@@ -1,18 +1,17 @@
-use axum::extract::Path;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Router;
-use capwat_error::ApiError;
-use capwat_model::id::UserId;
-
-use crate::extract::{Json, LocalInstanceSettings, SessionUser};
-use crate::{services, App};
-
 pub mod me {
-    use super::*;
+    use crate::extract::{Json, LocalInstanceSettings, SessionUser};
+    use crate::routes::v1::build_api_post_from_view;
+    use crate::{services, App};
 
+    use axum::extract::Query;
+    use axum::response::{IntoResponse, Response};
+    use axum::Router;
     use capwat_api_types::routes::posts::{PublishPost, PublishPostResponse};
-    use capwat_api_types::routes::users::LocalUserProfile;
+    use capwat_api_types::routes::users::{
+        GetCurrentUserFollowers, GetCurrentUserPosts, LocalUserProfile,
+    };
+    use capwat_api_types::user::UserView;
+    use capwat_error::ApiError;
     use capwat_utils::Sensitive;
 
     pub fn routes() -> Router<App> {
@@ -20,7 +19,37 @@ pub mod me {
 
         Router::new()
             .route("/", get(my_profile))
+            .route("/followers", get(followers))
+            .route("/posts", get(posts))
             .route("/posts", post(publish_post))
+    }
+
+    pub async fn followers(
+        app: App,
+        session_user: SessionUser,
+        Query(query): Query<GetCurrentUserFollowers>,
+    ) -> Result<Response, ApiError> {
+        let request = services::users::profile::GetLocalProfileFollowers {
+            page: query.pagination.page,
+            limit: query.pagination.limit,
+        };
+
+        let response = request
+            .perform(&app, &session_user)
+            .await?
+            .into_iter()
+            .map(|follower_view| UserView {
+                id: follower_view.user.user.id.0,
+                joined_at: follower_view.user.user.created.into(),
+                name: follower_view.user.user.name,
+                display_name: follower_view.user.user.display_name,
+                is_admin: follower_view.user.user.admin,
+                followers: follower_view.user.aggregates.followers as u64,
+                following: follower_view.user.aggregates.following as u64,
+            })
+            .collect::<Vec<_>>();
+
+        Ok(Json(response).into_response())
     }
 
     pub async fn my_profile(session_user: SessionUser) -> Result<Response, ApiError> {
@@ -42,6 +71,26 @@ pub mod me {
         });
 
         Ok(response.into_response())
+    }
+
+    pub async fn posts(
+        app: App,
+        session_user: SessionUser,
+        Query(query): Query<GetCurrentUserPosts>,
+    ) -> Result<Response, ApiError> {
+        let request = services::users::posts::GetLocalProfilePosts {
+            page: query.pagination.page,
+            limit: query.pagination.limit,
+        };
+
+        let response = request
+            .perform(&app, &session_user)
+            .await?
+            .into_iter()
+            .map(|view| build_api_post_from_view(view))
+            .collect::<Vec<_>>();
+
+        Ok(Json(response).into_response())
     }
 
     pub async fn publish_post(
@@ -68,7 +117,15 @@ pub mod me {
 }
 
 pub mod others {
-    use super::*;
+    use crate::extract::SessionUser;
+    use crate::{services, App};
+
+    use axum::extract::Path;
+    use axum::http::StatusCode;
+    use axum::response::{IntoResponse, Response};
+    use axum::Router;
+    use capwat_error::ApiError;
+    use capwat_model::id::UserId;
 
     pub fn routes() -> Router<App> {
         use axum::routing::post;
