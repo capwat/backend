@@ -3,35 +3,36 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
-use capwat_api_types::routes::posts::GetPostFeed;
+use capwat_api_types::routes::posts::ListPostRecommendations;
 use capwat_error::ApiError;
 
-use super::build_api_post_from_view;
 use crate::extract::Json;
 use crate::extract::SessionUser;
 use crate::services;
 use crate::App;
 
-pub async fn get_post_feed(
+use super::morphers::IntoApiPostView;
+
+pub async fn list_post_recommendations(
     app: App,
     session_user: SessionUser,
-    Query(data): Query<GetPostFeed>,
+    Query(data): Query<ListPostRecommendations>,
 ) -> Result<Response, ApiError> {
-    let request = services::posts::GetPostFeed {
-        page: data.pagination.page,
-        limit: data.pagination.limit,
+    let request = services::posts::ListPostRecommendations {
+        before: data.after,
+        limit: data.limit,
     };
 
     let response = request
         .perform(&app, &session_user)
         .await?
         .into_iter()
-        .map(|view| build_api_post_from_view(view))
+        .map(|view| view.into_api_post_view())
         .collect::<Vec<_>>();
 
     Ok(Json(response).into_response())
 }
 
 pub fn routes() -> Router<App> {
-    Router::new().route("/feed", get(get_post_feed))
+    Router::new().route("/recommendations", get(list_post_recommendations))
 }

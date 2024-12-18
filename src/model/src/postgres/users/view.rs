@@ -35,7 +35,7 @@ impl UserView {
     #[tracing::instrument(skip_all, name = "db.user_view.find_by_login")]
     pub async fn find_by_login(conn: &mut PgConnection, entry: &str) -> Result<Option<Self>> {
         // they should have checked if it is actually an email
-        debug_assert_ne!(entry, "_@_@_@_");
+        assert_ne!(entry, "_@_@_@_");
 
         let (sql, values) = Self::generate_select_stmt()
             .and_where(

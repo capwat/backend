@@ -1,3 +1,4 @@
+use capwat_api_types::util::SortOrder;
 use capwat_error::{ApiError, ApiErrorCategory};
 use capwat_model::user::FollowerView;
 
@@ -21,6 +22,8 @@ pub struct LocalProfileResponse {
 #[derive(Debug)]
 pub struct GetLocalProfileFollowers {
     pub page: Option<u64>,
+    pub order: Option<SortOrder>,
+
     // Our default limit is up to 30 followers/request
     pub limit: Option<u64>,
 }
@@ -37,7 +40,6 @@ impl GetLocalProfileFollowers {
         session_user: &SessionUser,
     ) -> Result<Vec<FollowerView>, ApiError> {
         let limit = self.limit.unwrap_or(Self::DEFAULT_LIMIT);
-        let page = self.page.unwrap_or(0);
 
         // there must be at least 5 to 35 posts/request only
         if !(Self::MIN_LIMIT..=Self::MAX_LIMIT).contains(&limit) {
@@ -45,7 +47,15 @@ impl GetLocalProfileFollowers {
         }
 
         let mut conn = app.db_read().await?;
-        let list = FollowerView::get_list(&mut conn, session_user.id, page, limit).await?;
+        let list = FollowerView::list_from_current_user(
+            &mut conn,
+            session_user.id,
+            limit,
+            self.page,
+            self.order,
+        )
+        .await?;
+
         Ok(list)
     }
 }

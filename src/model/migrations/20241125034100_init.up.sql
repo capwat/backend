@@ -54,8 +54,8 @@ INSERT INTO instance_settings (id) VALUES (0);
 CREATE TABLE followers (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     created TIMESTAMP NOT NULL DEFAULT now(),
-    source_id BIGINT NOT NULL REFERENCES users(id),
-    target_id BIGINT NOT NULL REFERENCES users(id),
+    source_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     UNIQUE (source_id, target_id),
     CHECK (source_id != target_id)
@@ -64,7 +64,7 @@ CREATE TABLE followers (
 CREATE TABLE posts (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     created TIMESTAMP NOT NULL DEFAULT now(),
-    author_id BIGINT NOT NULL REFERENCES users(id),
+    author_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     content TEXT NOT NULL,
     updated TIMESTAMP
 );

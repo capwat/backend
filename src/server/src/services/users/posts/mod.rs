@@ -2,13 +2,14 @@ mod publish;
 pub use self::publish::*;
 
 use capwat_error::{ApiError, ApiErrorCategory};
+use capwat_model::id::PostId;
 use capwat_model::post::PostView;
 
 use crate::extract::SessionUser;
 use crate::App;
 
 pub struct GetLocalProfilePosts {
-    pub page: Option<u64>,
+    pub before: Option<PostId>,
 
     // Our default limit is 20 posts/request but we do accept
     // requests up to 35 posts/request only.
@@ -27,7 +28,6 @@ impl GetLocalProfilePosts {
         session_user: &SessionUser,
     ) -> Result<Vec<PostView>, ApiError> {
         let limit = self.limit.unwrap_or(Self::DEFAULT_LIMIT);
-        let page = self.page.unwrap_or(0);
 
         // there must be at least 5 to 35 posts/request only
         if !(Self::MIN_LIMIT..=Self::MAX_LIMIT).contains(&limit) {
@@ -35,7 +35,9 @@ impl GetLocalProfilePosts {
         }
 
         let mut conn = app.db_read().await?;
-        let posts = PostView::list_for_their_posts(&mut conn, session_user.id, page, limit).await?;
+        let posts =
+            PostView::list_from_current_user(&mut conn, session_user.id, self.before, limit)
+                .await?;
 
         Ok(posts)
     }

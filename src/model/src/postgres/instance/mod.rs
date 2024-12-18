@@ -1,7 +1,7 @@
 use capwat_error::ext::{NoContextResultExt, ResultExt};
 use capwat_error::Result;
 use capwat_utils::cache::StaticValueCache;
-use sea_query::{Asterisk, Expr, ExprTrait, OnConflict, PostgresQueryBuilder, Query};
+use sea_query::{Asterisk, Expr, ExprTrait, Iden, OnConflict, PostgresQueryBuilder, Query};
 use sea_query_binder::{SqlxBinder, SqlxValues};
 use sqlx::PgConnection;
 use std::time::Duration;
@@ -12,6 +12,11 @@ use crate::instance::{InstanceSettingsIdent, RegistrationMode, UpdateInstanceSet
 use crate::InstanceSettings;
 
 mod aggregates;
+
+#[derive(Iden)]
+enum LocalIdent {
+    RegistrationMode,
+}
 
 impl InstanceSettings {
     #[tracing::instrument(skip_all, name = "db.instance.settings.get_local")]
@@ -79,7 +84,7 @@ impl UpdateInstanceSettings {
                     RegistrationMode::Closed => "closed",
                     RegistrationMode::RequireApproval => "require-approval",
                 })
-                .as_enum(super::RegistrationMode),
+                .as_enum(LocalIdent::RegistrationMode),
             );
         }
 

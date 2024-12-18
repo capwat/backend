@@ -1,6 +1,7 @@
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
+use capwat_api_types::user::UserFlags;
 use capwat_db::pool::PgConnection;
 use capwat_error::ext::NoContextResultExt;
 use capwat_error::{ApiError, ApiErrorCategory};
@@ -15,6 +16,7 @@ use crate::App;
 #[derive(Clone)]
 pub struct SessionUser {
     pub aggregates: UserAggregates,
+    pub flags: UserFlags,
     pub user: User,
 }
 
@@ -43,6 +45,7 @@ impl SessionUser {
         if let Some(user_view) = user_view {
             Ok(Self {
                 aggregates: user_view.aggregates,
+                flags: user_view.flags,
                 user: user_view.user,
             })
         } else {

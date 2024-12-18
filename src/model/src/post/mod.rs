@@ -13,8 +13,8 @@ pub use self::view::*;
 pub struct Post {
     pub id: PostId,
     pub created: NaiveDateTime,
-    pub author_id: UserId,
-    pub content: String,
+    pub author_id: Option<UserId>,
+    pub content: Option<String>,
     pub updated: Option<NaiveDateTime>,
 }
 

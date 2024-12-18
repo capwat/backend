@@ -25,6 +25,25 @@ impl Post {
             .erase_context()
             .attach_printable("could not find post by id")
     }
+
+    /// Deletes the post content but not the author.
+    #[must_use]
+    #[tracing::instrument(skip_all, name = "db.posts.remove")]
+    pub async fn delete(conn: &mut PgConnection, id: PostId) -> Result<()> {
+        let (sql, values) = Query::update()
+            .table(PostIdent::Posts)
+            .and_where(Expr::col(PostIdent::Id).eq(id.0))
+            .value(PostIdent::Content, None::<String>)
+            .build_sqlx(PostgresQueryBuilder);
+
+        sqlx::query_as_with::<_, Self, _>(&sql, values)
+            .fetch_optional(conn)
+            .await
+            .erase_context()
+            .attach_printable("could not remove post")?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]

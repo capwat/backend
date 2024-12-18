@@ -1,17 +1,17 @@
 pub mod me {
     use crate::extract::{Json, LocalInstanceSettings, SessionUser};
-    use crate::routes::v1::build_api_post_from_view;
+    use crate::routes::v1::morphers::{IntoApiPostView, IntoApiUserProfile, IntoApiUserView};
     use crate::{services, App};
 
     use axum::extract::Query;
     use axum::response::{IntoResponse, Response};
     use axum::Router;
-    use capwat_api_types::routes::posts::{PublishPost, PublishPostResponse};
     use capwat_api_types::routes::users::{
-        GetCurrentUserFollowers, GetCurrentUserPosts, LocalUserProfile,
+        CurrentUserFollowerEntry, ListCurrentUserFollowers, ListCurrentUserPosts, PublishPost,
+        PublishPostResponse,
     };
-    use capwat_api_types::user::UserView;
     use capwat_error::ApiError;
+    use capwat_model::id::PostId;
     use capwat_utils::Sensitive;
 
     pub fn routes() -> Router<App> {
@@ -27,25 +27,21 @@ pub mod me {
     pub async fn followers(
         app: App,
         session_user: SessionUser,
-        Query(query): Query<GetCurrentUserFollowers>,
+        Query(query): Query<ListCurrentUserFollowers>,
     ) -> Result<Response, ApiError> {
         let request = services::users::profile::GetLocalProfileFollowers {
-            page: query.pagination.page,
-            limit: query.pagination.limit,
+            page: query.page,
+            limit: query.limit,
+            order: query.order,
         };
 
         let response = request
             .perform(&app, &session_user)
             .await?
             .into_iter()
-            .map(|follower_view| UserView {
-                id: follower_view.user.user.id.0,
-                joined_at: follower_view.user.user.created.into(),
-                name: follower_view.user.user.name,
-                display_name: follower_view.user.user.display_name,
-                is_admin: follower_view.user.user.admin,
-                followers: follower_view.user.aggregates.followers as u64,
-                following: follower_view.user.aggregates.following as u64,
+            .map(|view| CurrentUserFollowerEntry {
+                followed_at: view.followed_at.into(),
+                user: view.target.into_api_user_view(),
             })
             .collect::<Vec<_>>();
 
@@ -53,41 +49,30 @@ pub mod me {
     }
 
     pub async fn my_profile(session_user: SessionUser) -> Result<Response, ApiError> {
-        let user_view = services::users::profile::LocalProfile
+        let view = services::users::profile::LocalProfile
             .perform(session_user)
             .await
             .session_user;
 
-        let response = Json(LocalUserProfile {
-            id: user_view.id.0,
-            joined_at: user_view.created.into(),
-            name: user_view.user.name,
-            display_name: user_view.user.display_name,
-
-            // TODO: Find a future-proof way to mitigate past the i64 limit
-            followers: user_view.aggregates.followers as u64,
-            following: user_view.aggregates.following as u64,
-            posts: user_view.aggregates.posts as u64,
-        });
-
+        let response = Json(view.into_api_user_profile());
         Ok(response.into_response())
     }
 
     pub async fn posts(
         app: App,
         session_user: SessionUser,
-        Query(query): Query<GetCurrentUserPosts>,
+        Query(query): Query<ListCurrentUserPosts>,
     ) -> Result<Response, ApiError> {
         let request = services::users::posts::GetLocalProfilePosts {
-            page: query.pagination.page,
-            limit: query.pagination.limit,
+            before: query.before.map(PostId),
+            limit: query.limit,
         };
 
         let response = request
             .perform(&app, &session_user)
             .await?
             .into_iter()
-            .map(|view| build_api_post_from_view(view))
+            .map(|view| view.into_api_post_view())
             .collect::<Vec<_>>();
 
         Ok(Json(response).into_response())
@@ -109,7 +94,6 @@ pub mod me {
 
         let response = Json(PublishPostResponse {
             id: response.post.id.0,
-            created_at: response.post.created.into(),
         });
 
         Ok(response.into_response())

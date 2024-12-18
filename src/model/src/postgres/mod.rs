@@ -5,9 +5,6 @@ mod users;
 
 use sea_query::{Alias, Iden, IntoColumnRef, IntoIden, SelectExpr, SimpleExpr};
 
-#[derive(sea_query::Iden)]
-pub struct RegistrationMode;
-
 fn into_view_aliases<
     A: Clone + Iden + 'static,
     B: Clone + Iden + 'static,

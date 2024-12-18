@@ -1,7 +1,10 @@
 use crate::util::Timestamp;
 use serde::{Deserialize, Serialize};
 
+mod flags;
 pub mod salt;
+
+pub use self::flags::*;
 pub use self::salt::*;
 
 /// This object represents user's profile.
@@ -13,9 +16,8 @@ pub struct UserProfile {
     pub id: i64,
     pub joined_at: Timestamp,
     pub name: String,
+    pub flags: UserFlags,
     pub display_name: Option<String>,
-    pub is_admin: bool,
-
     pub followers: u64,
     pub following: u64,
 }
@@ -28,8 +30,10 @@ pub struct UserView {
     pub id: i64,
     pub joined_at: Timestamp,
     pub name: String,
+    pub flags: UserFlags,
     pub display_name: Option<String>,
-    pub is_admin: bool,
+    pub followers: u64,
+    pub following: u64,
 }
 
 crate::should_impl_primitive_traits!(UserView);
