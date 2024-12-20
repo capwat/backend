@@ -3,8 +3,10 @@ pub mod me {
     use crate::routes::v1::morphers::{IntoApiPostView, IntoApiUserProfile, IntoApiUserView};
     use crate::{services, App};
 
-    use axum::extract::Query;
+    use axum::extract::{Path, Query};
+    use axum::http::StatusCode;
     use axum::response::{IntoResponse, Response};
+    use axum::routing::delete;
     use axum::Router;
     use capwat_api_types::routes::users::{
         CurrentUserFollowerEntry, ListCurrentUserFollowers, ListCurrentUserPosts, PublishPost,
@@ -20,6 +22,7 @@ pub mod me {
         Router::new()
             .route("/", get(my_profile))
             .route("/followers", get(followers))
+            .route("/posts/:id", delete(delete_post))
             .route("/posts", get(posts))
             .route("/posts", post(publish_post))
     }
@@ -29,7 +32,7 @@ pub mod me {
         session_user: SessionUser,
         Query(query): Query<ListCurrentUserFollowers>,
     ) -> Result<Response, ApiError> {
-        let request = services::users::profile::GetLocalProfileFollowers {
+        let request = services::users::profile::current_user::GetLocalProfileFollowers {
             page: query.page,
             limit: query.limit,
             order: query.order,
@@ -41,7 +44,7 @@ pub mod me {
             .into_iter()
             .map(|view| CurrentUserFollowerEntry {
                 followed_at: view.followed_at.into(),
-                user: view.target.into_api_user_view(),
+                user: view.source.into_api_user_view(),
             })
             .collect::<Vec<_>>();
 
@@ -49,7 +52,7 @@ pub mod me {
     }
 
     pub async fn my_profile(session_user: SessionUser) -> Result<Response, ApiError> {
-        let view = services::users::profile::LocalProfile
+        let view = services::users::profile::current_user::GetLocalProfile
             .perform(session_user)
             .await
             .session_user;
@@ -63,7 +66,7 @@ pub mod me {
         session_user: SessionUser,
         Query(query): Query<ListCurrentUserPosts>,
     ) -> Result<Response, ApiError> {
-        let request = services::users::posts::GetLocalProfilePosts {
+        let request = services::users::profile::current_user::GetLocalProfilePosts {
             before: query.before.map(PostId),
             limit: query.limit,
         };
@@ -84,7 +87,7 @@ pub mod me {
         local_settings: LocalInstanceSettings,
         Json(form): Json<PublishPost>,
     ) -> Result<Response, ApiError> {
-        let request = services::users::posts::PublishUserPost {
+        let request = services::users::profile::current_user::PublishUserPost {
             content: Sensitive::new(&form.content),
         };
 
@@ -98,10 +101,23 @@ pub mod me {
 
         Ok(response.into_response())
     }
+
+    pub async fn delete_post(
+        app: App,
+        session_user: SessionUser,
+        Path(post_id): Path<PostId>,
+    ) -> Result<Response, ApiError> {
+        let request = services::users::profile::current_user::DeleteCurrentUserPost {
+            id: Sensitive::new(post_id),
+        };
+        request.perform(&app, &session_user).await?;
+        Ok(StatusCode::OK.into_response())
+    }
 }
 
 pub mod others {
-    use crate::extract::SessionUser;
+    use crate::extract::{Json, SessionUser};
+    use crate::routes::v1::morphers::IntoApiUserProfile;
     use crate::{services, App};
 
     use axum::extract::Path;
@@ -110,13 +126,29 @@ pub mod others {
     use axum::Router;
     use capwat_error::ApiError;
     use capwat_model::id::UserId;
+    use capwat_utils::Sensitive;
 
     pub fn routes() -> Router<App> {
-        use axum::routing::post;
+        use axum::routing::{get, post};
 
         Router::new()
+            .route("/", get(profile))
             .route("/follow", post(follow))
             .route("/unfollow", post(unfollow))
+    }
+
+    pub async fn profile(
+        app: App,
+        session_user: Option<SessionUser>,
+        Path(target_user_id): Path<UserId>,
+    ) -> Result<Response, ApiError> {
+        let request = services::users::profile::GetProfile::Id(Sensitive::new(target_user_id));
+        let profile = request
+            .perform(&app, &session_user)
+            .await?
+            .into_api_user_profile();
+
+        Ok(Json(profile).into_response())
     }
 
     pub async fn follow(
@@ -174,7 +206,6 @@ pub mod others {
 
                     "followers": 0,
                     "following": 0,
-                    "posts": 0,
                 }));
             }
 

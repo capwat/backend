@@ -5,9 +5,12 @@ use capwat_model::user::FollowerView;
 use crate::extract::SessionUser;
 use crate::App;
 
-pub struct LocalProfile;
+mod posts;
+pub use self::posts::*;
 
-impl LocalProfile {
+pub struct GetLocalProfile;
+
+impl GetLocalProfile {
     #[tracing::instrument(skip_all, name = "services.users.profile.me")]
     pub async fn perform(self, session_user: SessionUser) -> LocalProfileResponse {
         LocalProfileResponse { session_user }

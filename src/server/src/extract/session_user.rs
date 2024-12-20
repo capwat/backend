@@ -10,6 +10,7 @@ use capwat_model::user::{UserAggregates, UserView};
 use capwat_model::User;
 use std::ops::Deref;
 use thiserror::Error;
+use tracing::debug;
 
 use crate::App;
 
@@ -49,6 +50,9 @@ impl SessionUser {
                 user: user_view.user,
             })
         } else {
+            if !capwat_utils::RELEASE {
+                debug!("cannot find user {id} from token");
+            }
             let error =
                 capwat_error::Error::new(ApiErrorCategory::AccessDenied, GetSessionUserError)
                     .attach_printable("specified user does not exists");

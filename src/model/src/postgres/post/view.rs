@@ -96,6 +96,9 @@ impl PostView {
         }
 
         let (sql, values) = stmt.build_sqlx(PostgresQueryBuilder);
+        println!("{sql}");
+        println!("{values:?}");
+
         sqlx::query_as_with::<_, Self, _>(&sql, values)
             .fetch_all(conn)
             .await

@@ -12,7 +12,7 @@ use crate::user::{Follower, FollowerView, UserView};
 use super::FollowerIdent;
 
 #[derive(Debug, Error)]
-#[error("could not get follower view from {0}")]
+#[error("could not find follower view from {0}")]
 pub struct FindFollowerViewError(&'static str);
 
 impl FollowerView {
@@ -29,7 +29,7 @@ impl FollowerView {
         let mut stmt = Query::select();
         stmt.column(Asterisk)
             .from(FollowerIdent::Followers)
-            .and_where(Expr::col(FollowerIdent::SourceId).eq(current_user_id.0));
+            .and_where(Expr::col(FollowerIdent::TargetId).eq(current_user_id.0));
 
         match order {
             SortOrder::Descending => {
@@ -53,18 +53,18 @@ impl FollowerView {
 
         let mut result = Vec::with_capacity(followers.len());
         for follower in followers {
-            let user = UserView::find(&mut *conn, follower.target_id)
+            let source = UserView::find(&mut *conn, follower.source_id)
                 .await
                 .and_then(|v| v.ok_or_else(|| Error::unknown_generic(sqlx::Error::RowNotFound)))
                 .attach_printable(
-                    "could not get user data to fetch list of followers from the current user",
+                    "could not get target user's data to fetch list of followers from the current user",
                 )?;
 
             result.push(Self {
                 id: follower.id,
                 followed_at: follower.created,
-                target: user,
-            })
+                source,
+            });
         }
 
         Ok(result)
@@ -90,16 +90,16 @@ mod tests {
         let (earl, _) = generate_user(&mut conn, "earl").await?;
         let (fred, _) = generate_user(&mut conn, "fred").await?;
 
-        Follower::follow(&mut conn, alice.id, earl.id).await?;
-        Follower::follow(&mut conn, alice.id, bob.id).await?;
-        Follower::follow(&mut conn, alice.id, darren.id).await?;
-        Follower::follow(&mut conn, alice.id, carol.id).await?;
-        Follower::follow(&mut conn, alice.id, fred.id).await?;
+        Follower::follow(&mut conn, earl.id, alice.id).await?;
+        Follower::follow(&mut conn, bob.id, alice.id).await?;
+        Follower::follow(&mut conn, darren.id, alice.id).await?;
+        Follower::follow(&mut conn, carol.id, alice.id).await?;
+        Follower::follow(&mut conn, fred.id, alice.id).await?;
 
         let mut list = FollowerView::list_from_current_user(&mut conn, alice.id, 2, None, None)
             .await?
             .into_iter()
-            .map(|v| v.target.user.id);
+            .map(|v| v.source.user.id);
 
         assert_eq!(Some(fred.id), list.next());
         assert_eq!(Some(carol.id), list.next());
@@ -108,7 +108,7 @@ mod tests {
         let mut list = FollowerView::list_from_current_user(&mut conn, alice.id, 2, Some(1), None)
             .await?
             .into_iter()
-            .map(|v| v.target.user.id);
+            .map(|v| v.source.user.id);
 
         assert_eq!(Some(darren.id), list.next());
         assert_eq!(Some(bob.id), list.next());

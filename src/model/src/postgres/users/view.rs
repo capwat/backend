@@ -33,6 +33,19 @@ impl UserView {
     }
 
     #[tracing::instrument(skip_all, name = "db.user_view.find_by_login")]
+    pub async fn find_by_username(conn: &mut PgConnection, entry: &str) -> Result<Option<Self>> {
+        let (sql, values) = Self::generate_select_stmt()
+            .and_where(Func::lower(Expr::col(UserIdent::Name)).eq(entry.to_lowercase()))
+            .build_sqlx(PostgresQueryBuilder);
+
+        sqlx::query_as_with::<_, Self, _>(&sql, values)
+            .fetch_optional(conn)
+            .await
+            .erase_context()
+            .attach_printable("could not find user view from their user name")
+    }
+
+    #[tracing::instrument(skip_all, name = "db.user_view.find_by_login")]
     pub async fn find_by_login(conn: &mut PgConnection, entry: &str) -> Result<Option<Self>> {
         // they should have checked if it is actually an email
         assert_ne!(entry, "_@_@_@_");

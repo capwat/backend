@@ -1,4 +1,7 @@
+mod delete;
 mod publish;
+
+pub use self::delete::*;
 pub use self::publish::*;
 
 use capwat_error::{ApiError, ApiErrorCategory};

@@ -36,6 +36,8 @@ impl Post {
             .value(PostIdent::Content, None::<String>)
             .build_sqlx(PostgresQueryBuilder);
 
+        println!("{sql}");
+
         sqlx::query_as_with::<_, Self, _>(&sql, values)
             .fetch_optional(conn)
             .await

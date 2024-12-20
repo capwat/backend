@@ -18,5 +18,5 @@ pub struct Follower {
 pub struct FollowerView {
     pub id: FollowerId,
     pub followed_at: NaiveDateTime,
-    pub target: UserView,
+    pub source: UserView,
 }

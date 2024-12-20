@@ -3,7 +3,6 @@
 mod login;
 mod register;
 
-pub mod posts;
 pub mod profile;
 
 pub use self::login::{Login, LoginResponse};

@@ -65,6 +65,6 @@ CREATE TABLE posts (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     created TIMESTAMP NOT NULL DEFAULT now(),
     author_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
+    content TEXT,
     updated TIMESTAMP
 );

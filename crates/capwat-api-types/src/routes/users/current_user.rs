@@ -56,6 +56,7 @@ pub struct ListCurrentUserFollowers {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct CurrentUserFollowerEntry {
     pub followed_at: Timestamp,
+    #[serde(flatten)]
     pub user: UserView,
 }
 

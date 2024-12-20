@@ -38,6 +38,9 @@ impl App {
             Ok(d) => Ok(d.claims),
             Err(error) => match error.kind() {
                 ErrorKind::Json(..) | ErrorKind::InvalidIssuer | ErrorKind::InvalidToken => {
+                    if !capwat_utils::RELEASE {
+                        debug!("user used an invalid token");
+                    }
                     Err(Error::new(ApiErrorCategory::AccessDenied, DecodeJwtError))
                 }
                 ErrorKind::ExpiredSignature => {
